@@ -56,6 +56,11 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "agent-commerce-adapter-backend"}
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "service": "agent-commerce-adapter-backend"}
