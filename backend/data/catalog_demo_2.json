@@ -1,0 +1,18 @@
+{
+  "store_name": "Little Wonders Gift Co.",
+  "inventory": [
+    {"id": "LW-01", "product_title": "Rattan Picture Holder", "price": 469, "stock_count": 22, "product_type": "gifts", "notes": "A boho rattan frame for a 5x7 photograph.", "return_days": 7, "qty_limit": 5},
+    {"id": "LW-02", "product_title": "Glazed Coffee Cup Duo", "price": 629, "stock_count": 38, "product_type": "home", "notes": "Two hand-glazed stoneware coffee cups.", "return_days": 10, "qty_limit": 4},
+    {"id": "LW-03", "product_title": "Vanilla Bean Soy Candle", "price": 359, "stock_count": 55, "product_type": "gifts", "notes": "Soy wax candle scented with vanilla bean.", "return_days": 0, "qty_limit": 10},
+    {"id": "LW-04", "product_title": "Oak Desk Tidy", "price": 869, "stock_count": 16, "product_type": "home", "notes": "Oak-finish desk organizer, 4 compartments.", "return_days": 7, "qty_limit": 3},
+    {"id": "LW-05", "product_title": "Pocket Bluetooth Speaker", "price": 1249, "stock_count": 20, "product_type": "electronics", "notes": "Bluetooth 5.0 speaker, 6hr battery life.", "return_days": 15, "qty_limit": 2},
+    {"id": "LW-06", "product_title": "Birthday Greeting Card", "price": 129, "stock_count": 90, "product_type": "gifts", "notes": "Custom-printed birthday card.", "return_days": 0, "qty_limit": 20},
+    {"id": "LW-07", "product_title": "A5 Leather Journal", "price": 579, "stock_count": 33, "product_type": "gifts", "notes": "Leather-bound journal, 200 ruled pages.", "return_days": 7, "qty_limit": 6},
+    {"id": "LW-08", "product_title": "Copper Cooler Bottle", "price": 729, "stock_count": 27, "product_type": "home", "notes": "750ml copper bottle, keeps water cool 24h.", "return_days": 10, "qty_limit": 5},
+    {"id": "LW-09", "product_title": "ANC Wireless Earbuds", "price": 2399, "stock_count": 12, "product_type": "electronics", "notes": "True wireless earbuds with noise cancellation.", "return_days": 15, "qty_limit": 2},
+    {"id": "LW-10", "product_title": "Belgian Truffle Box (12pc)", "price": 769, "stock_count": 42, "product_type": "gifts", "notes": "Assorted Belgian chocolate truffles.", "return_days": 0, "qty_limit": 8},
+    {"id": "LW-11", "product_title": "Trio Succulent Planters", "price": 519, "stock_count": 25, "product_type": "home", "notes": "Set of 3 ceramic planters with faux succulents.", "return_days": 7, "qty_limit": 4},
+    {"id": "LW-12", "product_title": "10in WiFi Photo Frame", "price": 3399, "stock_count": 8, "product_type": "electronics", "notes": "WiFi digital photo frame with app upload.", "return_days": 15, "qty_limit": 1},
+    {"id": "LW-13", "product_title": "Hand-Painted Silk Scarf", "price": 859, "stock_count": 19, "product_type": "gifts", "notes": "Lightweight silk scarf, floral print.", "return_days": 7, "qty_limit": 4}
+  ]
+}

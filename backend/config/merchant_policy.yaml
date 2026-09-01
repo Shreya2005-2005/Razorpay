@@ -1,0 +1,9 @@
+# Merchant Agent pricing/discount rules — enforced during negotiation.
+
+max_discount_pct: 0.10        # merchant will never discount more than this off list price
+bulk_discount_min_qty: 2      # committing to this many units unlocks the full discount ceiling
+cost_floor_pct: 0.75          # merchant will never accept less than this fraction of list price
+
+active_promotion:
+  category: electronics
+  discount_pct: 0.05          # flat extra discount for this category, even on single-unit orders

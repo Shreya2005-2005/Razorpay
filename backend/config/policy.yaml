@@ -1,0 +1,16 @@
+# Policy Guard rules — every agent action that touches money or checkout
+# is checked against this file before it is allowed to proceed.
+
+max_spend_per_order: 1500
+max_orders_per_session: 1
+
+allowed_categories:
+  - gifts
+  - home
+  - electronics
+
+blocked_categories:
+  - alcohol
+  - weapons
+
+requires_human_approval_above: 1000
