@@ -9,11 +9,11 @@
 
 ## The story
 
-Right now, when you shop online, *you* click every button — search, compare, add to cart, pay. But a new kind of shopper is showing up: AI agents that do this on your behalf. You tell an assistant "buy me a birthday gift under ₹1500," and it goes and actually does it — no clicking required.
+Right now, when you shop online, *you* click every button  search, compare, add to cart, pay. But a new kind of shopper is showing up: AI agents that do this on your behalf. You tell an assistant "buy me a birthday gift under ₹1500," and it goes and actually does it — no clicking required.
 
 The problem is, most online shops are built for humans to *look at*, not for AI to *understand and safely transact with*. There's no common way for an AI buyer to read a shop's catalog, know what it's allowed to spend, or prove afterward that it acted responsibly.
 
-**Agent Commerce Adapter** is a working answer to that problem — built for Razorpay's Buildathon (Track 1: AI Growth & Agentic Commerce).
+**Agent Commerce Adapter** is a working answer to that problem  built for Razorpay's Buildathon (Track 1: AI Growth & Agentic Commerce).
 
 ## What it actually does
 
