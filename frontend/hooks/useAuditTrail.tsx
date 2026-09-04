@@ -14,7 +14,7 @@ import type { AuditEvent } from "@/lib/types";
 
 export type ConnectionState = "connecting" | "open" | "error";
 
-const SESSION_START_PREFIX = "Starting session with goal: ";
+export const SESSION_START_PREFIX = "Starting session with goal: ";
 
 export interface SessionSummary {
   id: string;

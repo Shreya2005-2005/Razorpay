@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { startSession } from "@/lib/api";
+import { startSession, stopSession } from "@/lib/api";
+import { useAuditTrail } from "@/hooks/useAuditTrail";
+import ComplianceCard from "@/components/ComplianceCard";
+import { formatDuration, summarizeSession } from "@/lib/sessionSummary";
 
 type Status = "idle" | "running" | "done" | "error";
 
@@ -12,10 +15,13 @@ interface SessionFormProps {
 }
 
 export default function SessionForm({ catalogFile }: SessionFormProps) {
+  const { activeSessionId, isLive, events } = useAuditTrail();
   const [goal, setGoal] = useState("");
   const [budgetInr, setBudgetInr] = useState<number>(1000);
   const [status, setStatus] = useState<Status>("idle");
   const [resultMessage, setResultMessage] = useState("");
+  const [stopping, setStopping] = useState(false);
+  const [stopError, setStopError] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -23,6 +29,8 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
 
     setStatus("running");
     setResultMessage("");
+    setStopping(false);
+    setStopError("");
     try {
       const result = await startSession({
         goal,
@@ -36,6 +44,28 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
       setStatus("error");
     }
   }
+
+  async function handleStop() {
+    if (!activeSessionId || stopping) return;
+    setStopping(true);
+    setStopError("");
+    try {
+      await stopSession(activeSessionId);
+    } catch (err) {
+      setStopError(err instanceof Error ? err.message : String(err));
+      setStopping(false);
+    }
+  }
+
+  // The session id only becomes known once the audit stream delivers the
+  // "Starting session..." event — a beat after the request is sent, not
+  // before — so the button can't appear until then.
+  const canStop = status === "running" && isLive && !!activeSessionId;
+
+  const durationMs = useMemo(
+    () => summarizeSession(events).durationMs,
+    [events]
+  );
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -82,11 +112,33 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
         >
           {status === "running" ? "Running…" : "Start Buyer Agent"}
         </button>
+        {canStop && (
+          <button
+            type="button"
+            onClick={handleStop}
+            disabled={stopping}
+            className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+          >
+            {stopping ? "Stopping…" : "Stop Agent"}
+          </button>
+        )}
       </form>
 
-      {status === "running" && (
+      {status === "running" && !stopping && (
         <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
           Agent is shopping — watch the audit trail for live activity…
+        </p>
+      )}
+
+      {stopping && (
+        <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+          Stopping — the agent will halt before its next action…
+        </p>
+      )}
+
+      {stopError && (
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+          {stopError}
         </p>
       )}
 
@@ -159,6 +211,18 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
               {resultMessage}
             </ReactMarkdown>
           )}
+        </div>
+      )}
+
+      {status === "done" && durationMs !== null && (
+        <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+          <span aria-hidden>⚡</span> Completed in {formatDuration(durationMs)}
+        </p>
+      )}
+
+      {status === "done" && (
+        <div className="mt-3">
+          <ComplianceCard />
         </div>
       )}
     </div>

@@ -6,6 +6,15 @@ import type { AuditEvent } from "@/lib/types";
 
 const PRICE_KEYS = ["settled_price_inr", "counter_inr", "offer_inr"] as const;
 
+interface Settlement {
+  settledPriceInr: number;
+  listPriceInr: number;
+  quantity: number;
+  savedPerUnitInr: number;
+  savedTotalInr: number;
+  savedPct: number;
+}
+
 function extractPrice(event: AuditEvent): number | null {
   const meta = event.metadata ?? {};
   for (const key of PRICE_KEYS) {
@@ -19,10 +28,63 @@ function isSettled(event: AuditEvent): boolean {
   return event.message.toLowerCase().includes("accepts");
 }
 
+/** A settlement event carries settled_price_inr + list_price_inr (added
+ * specifically so the frontend can compute savings without re-deriving
+ * pricing logic that only core.negotiation/core.merchant_agent know). */
+function extractSettlement(event: AuditEvent): Settlement | null {
+  const meta = event.metadata ?? {};
+  const settledPriceInr = meta.settled_price_inr;
+  const listPriceInr = meta.list_price_inr;
+  const quantity = meta.quantity;
+  if (
+    typeof settledPriceInr !== "number" ||
+    typeof listPriceInr !== "number" ||
+    listPriceInr <= 0
+  ) {
+    return null;
+  }
+  const qty = typeof quantity === "number" && quantity > 0 ? quantity : 1;
+  const savedPerUnitInr = listPriceInr - settledPriceInr;
+  return {
+    settledPriceInr,
+    listPriceInr,
+    quantity: qty,
+    savedPerUnitInr,
+    savedTotalInr: savedPerUnitInr * qty,
+    savedPct: (savedPerUnitInr / listPriceInr) * 100,
+  };
+}
+
+function SavingsLine({ settlement }: { settlement: Settlement }) {
+  if (settlement.savedPerUnitInr <= 0) {
+    // Settled at or above list price (e.g. a low opening offer that still
+    // landed at list) — nothing to brag about, so just show the price.
+    return (
+      <p className="mt-1 font-mono text-xs opacity-80">
+        ₹{settlement.settledPriceInr.toFixed(2)}/unit
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 text-xs opacity-80">
+      <span className="font-mono line-through opacity-60">
+        ₹{settlement.listPriceInr.toFixed(2)}
+      </span>{" "}
+      <span className="font-mono font-semibold">
+        ₹{settlement.settledPriceInr.toFixed(2)}
+      </span>{" "}
+      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+        — {settlement.savedPct.toFixed(0)}% saved
+      </span>
+    </p>
+  );
+}
+
 function Bubble({ event }: { event: AuditEvent }) {
   const isBuyer = event.actor === "buyer_agent";
-  const price = extractPrice(event);
   const settled = isSettled(event);
+  const settlement = settled ? extractSettlement(event) : null;
+  const price = settlement ? null : extractPrice(event);
 
   return (
     <div className={`flex ${isBuyer ? "justify-start" : "justify-end"}`}>
@@ -42,6 +104,7 @@ function Bubble({ event }: { event: AuditEvent }) {
           )}
         </div>
         <p>{event.message}</p>
+        {settlement && <SavingsLine settlement={settlement} />}
         {price !== null && (
           <p className="mt-1 font-mono text-xs opacity-80">
             ₹{price.toFixed(2)}/unit
@@ -60,11 +123,21 @@ export default function NegotiationPanel() {
     [events]
   );
 
-  const lastSettled = useMemo(
-    () => [...negotiationEvents].reverse().find(isSettled) ?? null,
+  const settlements = useMemo(
+    () =>
+      negotiationEvents
+        .filter(isSettled)
+        .map(extractSettlement)
+        .filter((s): s is Settlement => s !== null),
     [negotiationEvents]
   );
-  const settledPrice = lastSettled ? extractPrice(lastSettled) : null;
+
+  const lastSettlement =
+    settlements.length > 0 ? settlements[settlements.length - 1] : null;
+  const totalSavedInr = settlements.reduce(
+    (sum, s) => sum + Math.max(s.savedTotalInr, 0),
+    0
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -72,9 +145,17 @@ export default function NegotiationPanel() {
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Negotiation
         </h2>
-        {settledPrice !== null && (
+        {lastSettlement && (
           <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
-            Settled at ₹{settledPrice.toFixed(2)}/unit
+            Settled at ₹{lastSettlement.settledPriceInr.toFixed(2)} vs list
+            price ₹{lastSettlement.listPriceInr.toFixed(2)} —{" "}
+            {lastSettlement.savedPct.toFixed(0)}% saved
+          </p>
+        )}
+        {totalSavedInr > 0 && (
+          <p className="mt-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            ₹{totalSavedInr.toFixed(2)} saved across {settlements.length}{" "}
+            negotiation{settlements.length === 1 ? "" : "s"} so far
           </p>
         )}
       </div>

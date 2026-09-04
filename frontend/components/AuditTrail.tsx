@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAuditTrail, type ConnectionState } from "@/hooks/useAuditTrail";
+import { generateSessionNarrative } from "@/lib/sessionNarrative";
+import { summarizeSession } from "@/lib/sessionSummary";
 import type { AuditActor, AuditEvent } from "@/lib/types";
 
 const ACTOR_STYLES: Record<
@@ -45,6 +47,7 @@ const EVENT_TYPE_STYLES: Record<string, string> = {
   payment_call: "text-green-600 dark:text-green-400",
   failure: "text-red-600 dark:text-red-400",
   recovery: "text-teal-600 dark:text-teal-400",
+  stopped: "text-orange-600 dark:text-orange-400",
 };
 
 const CONNECTION_STYLES: Record<
@@ -121,6 +124,10 @@ export default function AuditTrail() {
   }
 
   const status = CONNECTION_STYLES[connectionState];
+  const narrative = useMemo(() => {
+    const summary = summarizeSession(events);
+    return summary.goal ? generateSessionNarrative(summary) : null;
+  }, [events]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -137,6 +144,11 @@ export default function AuditTrail() {
           {status.label}
         </div>
       </div>
+      {narrative && (
+        <p className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-700 italic dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          {narrative}
+        </p>
+      )}
       <div
         ref={scrollRef}
         onScroll={handleScroll}

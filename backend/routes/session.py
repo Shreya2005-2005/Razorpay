@@ -1,8 +1,10 @@
-"""Endpoint that runs a full buyer-agent shopping session to completion."""
+"""Endpoints that run a full buyer-agent shopping session to completion,
+and let a running one be stopped early."""
 
 from fastapi import APIRouter, HTTPException
 
 from agents.buyer_agent import BuyerAgent
+from core import kill_switch
 from core.catalog_translator import CatalogTranslationError
 from models.schemas import SessionResult, SessionStartRequest
 
@@ -30,3 +32,13 @@ def start_session(body: SessionStartRequest) -> SessionResult:
 
     final_message = agent.run()
     return SessionResult(final_message=final_message)
+
+
+@router.post("/{session_id}/stop")
+def stop_session(session_id: str) -> dict:
+    """Ask a running session to halt at its next safe checkpoint — before
+    its next tool call, so a checkout already in flight always finishes
+    rather than being interrupted partway. A no-op (still returns 200) if
+    no session with this id is currently running."""
+    kill_switch.request_stop(session_id)
+    return {"status": "stop_requested"}

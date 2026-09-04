@@ -32,6 +32,17 @@ export async function startSession(
   return res.json();
 }
 
+export async function stopSession(sessionId: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/session/${encodeURIComponent(sessionId)}/stop`,
+    { method: "POST" }
+  );
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`Failed to stop session (${res.status}): ${detail}`);
+  }
+}
+
 export async function fetchCatalog(catalogFile: string): Promise<Product[]> {
   const res = await fetch(
     `${API_BASE_URL}/api/catalog/${encodeURIComponent(catalogFile)}`

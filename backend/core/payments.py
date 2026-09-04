@@ -155,7 +155,17 @@ def finalize_payment(
             actor="razorpay",
             event_type="payment_call",
             message=f"Payment {payment_id} captured for order {order_id}",
-            metadata={"order_id": order_id, "payment_id": payment_id, "status": status},
+            metadata={
+                "order_id": order_id,
+                "payment_id": payment_id,
+                "status": status,
+                # Both checked explicitly above, on the real Razorpay APIs —
+                # never inferred from what the browser claims. Surfaced here
+                # so the frontend's compliance summary doesn't have to guess
+                # at what happened from the message text.
+                "signature_verified": bool(signature),
+                "payments_api_verified": True,
+            },
             session_id=session_id,
         )
     else:
