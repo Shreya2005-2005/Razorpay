@@ -23,7 +23,8 @@ export default function Home() {
             Agent Commerce Adapter
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Live view of the buyer agent, merchant negotiation, policy guard, and payments.
+            Live view of the buyer agent, merchant negotiation, policy guard,
+            and payments.
           </p>
         </header>
 

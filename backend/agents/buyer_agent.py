@@ -1,3 +1,7 @@
+"""The Buyer Agent: an LLM tool-calling loop that shops a catalog toward a
+goal, negotiates price, and checks out — emitting every decision to the
+audit trail as it goes."""
+
 import json
 import os
 import uuid
@@ -132,7 +136,9 @@ class BuyerAgent:
                 return product.model_dump()
         return {"error": f"No product with id '{product_id}'"}
 
-    def _negotiate_with_merchant(self, product_id: str, offer_inr: float, quantity: int = 1) -> dict:
+    def _negotiate_with_merchant(
+        self, product_id: str, offer_inr: float, quantity: int = 1
+    ) -> dict:
         product = next((p for p in self.catalog if p.product_id == product_id), None)
         if product is None:
             return {"error": f"No product with id '{product_id}'"}
@@ -147,13 +153,14 @@ class BuyerAgent:
         if product is None:
             return {"error": f"No product with id '{product_id}'"}
 
-        result = initiate_checkout(
+        checkout_result = initiate_checkout(
             product=product,
             quantity=quantity,
             orders_this_session=self.orders_this_session,
             unit_price_inr=unit_price_inr,
         )
-        if result.get("status") == "awaiting_payment":
+        result = checkout_result.model_dump(exclude_none=True)
+        if checkout_result.status == "awaiting_payment":
             result["note"] = (
                 "A real Razorpay test-mode order was created, but completing payment "
                 "requires a human in a browser — tell the user to open checkout_url "
@@ -179,7 +186,10 @@ class BuyerAgent:
         loop can flag the *next* tool call as a recovery attempt."""
         if "error" in result:
             return result["error"]
-        if result.get("success") is False:
+        if result.get("success") is False or result.get("status") in (
+            "blocked_by_policy",
+            "failed",
+        ):
             return result.get("reason") or f"status: {result.get('status')}"
         if result.get("accepted") is False:
             return result.get("reason", "negotiation did not converge")
@@ -188,6 +198,7 @@ class BuyerAgent:
         return None
 
     def run(self, max_turns: int = 15) -> str:
+        """Run the tool-calling loop to completion and return the agent's final answer."""
         with session_scope(self.session_id):
             return self._run(max_turns)
 

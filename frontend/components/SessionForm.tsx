@@ -45,9 +45,14 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
       <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
         Catalog: <span className="font-mono">{catalogFile}</span>
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-3 sm:flex-row sm:items-end"
+      >
         <label className="flex-1 text-sm">
-          <span className="mb-1 block text-zinc-500 dark:text-zinc-400">Goal</span>
+          <span className="mb-1 block text-zinc-500 dark:text-zinc-400">
+            Goal
+          </span>
           <input
             type="text"
             value={goal}
@@ -58,7 +63,9 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
           />
         </label>
         <label className="text-sm sm:w-40">
-          <span className="mb-1 block text-zinc-500 dark:text-zinc-400">Budget (₹)</span>
+          <span className="mb-1 block text-zinc-500 dark:text-zinc-400">
+            Budget (₹)
+          </span>
           <input
             type="number"
             min={0}
@@ -97,12 +104,18 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                p: ({ children }) => (
+                  <p className="mb-2 last:mb-0">{children}</p>
+                ),
                 ul: ({ children }) => (
-                  <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>
+                  <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
+                    {children}
+                  </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>
+                  <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
+                    {children}
+                  </ol>
                 ),
                 strong: ({ children }) => (
                   <strong className="font-semibold text-zinc-900 dark:text-zinc-50">
@@ -126,7 +139,9 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
                 ),
                 table: ({ children }) => (
                   <div className="mb-2 overflow-x-auto last:mb-0">
-                    <table className="w-full border-collapse text-left text-sm">{children}</table>
+                    <table className="w-full border-collapse text-left text-sm">
+                      {children}
+                    </table>
                   </div>
                 ),
                 th: ({ children }) => (

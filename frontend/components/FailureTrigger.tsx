@@ -30,7 +30,10 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
 
   if (products.length === 0 && productId !== "") {
     setProductId("");
-  } else if (products.length > 0 && !products.some((p) => p.product_id === productId)) {
+  } else if (
+    products.length > 0 &&
+    !products.some((p) => p.product_id === productId)
+  ) {
     setProductId(products[0].product_id);
   }
 
@@ -74,7 +77,9 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
           disabled={products.length === 0}
           className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         >
-          {products.length === 0 && <option value="">No products loaded</option>}
+          {products.length === 0 && (
+            <option value="">No products loaded</option>
+          )}
           {products.map((p) => (
             <option key={p.product_id} value={p.product_id}>
               {p.product_id} — {p.name}
@@ -102,7 +107,9 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
         </button>
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
 
       <div className="mt-3">
         <p className="mb-1.5 text-xs text-zinc-500 dark:text-zinc-400">
@@ -118,7 +125,8 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
                 className="flex items-center justify-between rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300"
               >
                 <span>
-                  <span className="font-mono">{id}</span> — {m.replace("_", " ")}
+                  <span className="font-mono">{id}</span> —{" "}
+                  {m.replace("_", " ")}
                 </span>
                 <button
                   type="button"

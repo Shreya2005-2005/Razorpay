@@ -40,7 +40,9 @@ export function AuditTrailProvider({ children }: { children: ReactNode }) {
   const [latestSessionId, setLatestSessionId] = useState<string | null>(null);
   // null = follow whichever session is currently live; a concrete id pins the
   // view to that past session until a new session starts.
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null
+  );
   const latestSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -60,7 +62,10 @@ export function AuditTrailProvider({ children }: { children: ReactNode }) {
       try {
         const parsed: AuditEvent = JSON.parse(event.data);
         setEvents((prev) => [...prev, parsed]);
-        if (parsed.session_id && parsed.session_id !== latestSessionIdRef.current) {
+        if (
+          parsed.session_id &&
+          parsed.session_id !== latestSessionIdRef.current
+        ) {
           latestSessionIdRef.current = parsed.session_id;
           setLatestSessionId(parsed.session_id);
           // A genuinely new session started — snap back to live so it isn't
@@ -102,7 +107,10 @@ export function AuditTrailProvider({ children }: { children: ReactNode }) {
   const activeSessionId = selectedSessionId ?? latestSessionId;
 
   const filteredEvents = useMemo(
-    () => (activeSessionId ? events.filter((e) => e.session_id === activeSessionId) : events),
+    () =>
+      activeSessionId
+        ? events.filter((e) => e.session_id === activeSessionId)
+        : events,
     [events, activeSessionId]
   );
 

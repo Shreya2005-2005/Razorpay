@@ -1,9 +1,5 @@
 export type AuditActor =
-  | "buyer_agent"
-  | "merchant_agent"
-  | "policy_guard"
-  | "razorpay"
-  | "system";
+  "buyer_agent" | "merchant_agent" | "policy_guard" | "razorpay" | "system";
 
 export type AuditEventType =
   | "decision"

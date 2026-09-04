@@ -1,3 +1,5 @@
+"""Merchant-side pricing/discount rules loaded from config/merchant_policy.yaml."""
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -10,6 +12,7 @@ MERCHANT_POLICY_PATH = Path(__file__).resolve().parent.parent / "config" / "merc
 
 @lru_cache
 def load_merchant_policy() -> MerchantPolicyConfig:
+    """Load and cache the merchant pricing config from config/merchant_policy.yaml."""
     raw = yaml.safe_load(MERCHANT_POLICY_PATH.read_text(encoding="utf-8"))
     return MerchantPolicyConfig(**raw)
 
@@ -28,6 +31,8 @@ class MerchantAgent:
         self.policy = policy or load_merchant_policy()
 
     def min_acceptable_price(self, product: Product, quantity: int) -> float:
+        """The lowest per-unit price the merchant will accept for this order,
+        after applying any bulk/promotion discount and the cost floor."""
         discount_pct = 0.0
         if quantity >= self.policy.bulk_discount_min_qty:
             discount_pct = self.policy.max_discount_pct

@@ -1,3 +1,6 @@
+"""Bounded back-and-forth negotiation between a buyer's opening offer and
+the merchant's deterministic pricing floor."""
+
 from core.audit_trail import audit_trail
 from core.merchant_agent import MerchantAgent
 from models.schemas import NegotiationResult, Product

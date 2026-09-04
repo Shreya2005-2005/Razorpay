@@ -1,8 +1,13 @@
+"""The business audit trail: an append-only, in-memory log of every
+decision, guardrail check, negotiation turn, and payment call an agent run
+produces, fanned out live to SSE subscribers."""
+
 import asyncio
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Iterator
+from datetime import UTC, datetime
+from typing import Any
 
 from models.schemas import AuditActor, AuditEvent, AuditEventType
 
@@ -16,6 +21,7 @@ _current_session_id: ContextVar[str] = ContextVar("current_session_id", default=
 
 @contextmanager
 def session_scope(session_id: str) -> Iterator[None]:
+    """Tag every audit_trail.emit() call made within this block with `session_id`."""
     token = _current_session_id.set(session_id)
     try:
         yield
@@ -24,6 +30,7 @@ def session_scope(session_id: str) -> Iterator[None]:
 
 
 def current_session_id() -> str:
+    """The session id of the agent run currently executing on this task, if any."""
     return _current_session_id.get()
 
 
@@ -40,11 +47,12 @@ class AuditTrail:
         actor: AuditActor,
         event_type: AuditEventType,
         message: str,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         session_id: str | None = None,
     ) -> AuditEvent:
+        """Record one event and push it to every live SSE subscriber."""
         event = AuditEvent(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             actor=actor,
             event_type=event_type,
             message=message,
@@ -57,14 +65,17 @@ class AuditTrail:
         return event
 
     def history(self) -> list[AuditEvent]:
+        """Every event recorded so far, oldest first."""
         return list(self._history)
 
     def subscribe(self) -> asyncio.Queue[AuditEvent]:
+        """Register a new live subscriber queue; pair with unsubscribe() when done."""
         queue: asyncio.Queue[AuditEvent] = asyncio.Queue()
         self._subscribers.add(queue)
         return queue
 
     def unsubscribe(self, queue: asyncio.Queue[AuditEvent]) -> None:
+        """Stop delivering new events to a subscriber queue."""
         self._subscribers.discard(queue)
 
 

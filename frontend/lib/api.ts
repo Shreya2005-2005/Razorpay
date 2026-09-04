@@ -33,7 +33,9 @@ export async function startSession(
 }
 
 export async function fetchCatalog(catalogFile: string): Promise<Product[]> {
-  const res = await fetch(`${API_BASE_URL}/api/catalog/${encodeURIComponent(catalogFile)}`);
+  const res = await fetch(
+    `${API_BASE_URL}/api/catalog/${encodeURIComponent(catalogFile)}`
+  );
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(`Failed to load catalog (${res.status}): ${detail}`);
@@ -41,7 +43,9 @@ export async function fetchCatalog(catalogFile: string): Promise<Product[]> {
   return res.json();
 }
 
-export async function fetchArmedFailures(): Promise<Record<string, FailureMode>> {
+export async function fetchArmedFailures(): Promise<
+  Record<string, FailureMode>
+> {
   const res = await fetch(`${API_BASE_URL}/api/failure-injector/armed`);
   if (!res.ok) {
     throw new Error(`Failed to load armed failures (${res.status})`);
@@ -66,7 +70,9 @@ export async function armFailure(
   return data.armed;
 }
 
-export async function disarmFailure(productId: string): Promise<Record<string, FailureMode>> {
+export async function disarmFailure(
+  productId: string
+): Promise<Record<string, FailureMode>> {
   const res = await fetch(
     `${API_BASE_URL}/api/failure-injector/disarm?product_id=${encodeURIComponent(productId)}`,
     { method: "POST" }

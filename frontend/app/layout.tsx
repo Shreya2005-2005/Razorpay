@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Agent Commerce Adapter",
-  description: "Live buyer agent, negotiation, policy, and payment audit trail.",
+  description:
+    "Live buyer agent, negotiation, policy, and payment audit trail.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -94,8 +94,9 @@ export default function CatalogUploader({
       {status === "done" && (
         <>
           <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-            {products.length} item{products.length === 1 ? "" : "s"} normalized to the standard
-            schema — same shape regardless of the source file&apos;s columns.
+            {products.length} item{products.length === 1 ? "" : "s"} normalized
+            to the standard schema — same shape regardless of the source
+            file&apos;s columns.
           </p>
           <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
             <table className="w-full text-left text-xs">
@@ -124,7 +125,9 @@ export default function CatalogUploader({
                     <td className="px-2 py-1 font-mono text-zinc-700 dark:text-zinc-300">
                       {p.product_id}
                     </td>
-                    <td className="px-2 py-1 text-zinc-800 dark:text-zinc-200">{p.name}</td>
+                    <td className="px-2 py-1 text-zinc-800 dark:text-zinc-200">
+                      {p.name}
+                    </td>
                     <td className="px-2 py-1 font-mono text-zinc-700 dark:text-zinc-300">
                       {p.price_inr.toFixed(2)}
                     </td>

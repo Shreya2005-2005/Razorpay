@@ -1,10 +1,17 @@
+"""Normalize an arbitrary merchant catalog file (csv/json, arbitrary column
+names) into the standard Product schema, via a known-alias table with an
+LLM fallback for unrecognized column names."""
+
 import csv
 import json
 import os
 from pathlib import Path
 from typing import Any
 
+from core.logging_config import get_logger
 from models.schemas import Product
+
+logger = get_logger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -24,7 +31,7 @@ REQUIRED_FIELDS = list(FIELD_ALIASES.keys())
 
 
 class CatalogTranslationError(Exception):
-    pass
+    """Raised when a catalog file can't be found, parsed, or mapped onto the standard schema."""
 
 
 def _load_raw_records(catalog_file: str) -> list[dict[str, Any]]:
@@ -75,6 +82,7 @@ def _llm_field_map(source_columns: list[str], missing_fields: list[str]) -> dict
     """Best-effort fallback for merchant schemas the alias table doesn't cover."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
+        logger.warning("catalog_field_mapping_skipped_no_api_key", missing_fields=missing_fields)
         return {}
 
     from groq import Groq
@@ -87,6 +95,7 @@ def _llm_field_map(source_columns: list[str], missing_fields: list[str]) -> dict
         "Reply with ONLY a JSON object mapping each standard field to the best-matching "
         "source column name, no prose. Omit a field if no reasonable match exists."
     )
+    logger.info("catalog_field_mapping_llm_fallback", missing_fields=missing_fields)
     response = client.chat.completions.create(
         model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
         messages=[{"role": "user", "content": prompt}],
@@ -94,7 +103,8 @@ def _llm_field_map(source_columns: list[str], missing_fields: list[str]) -> dict
     )
     try:
         mapping = json.loads(response.choices[0].message.content)
-    except (json.JSONDecodeError, IndexError, AttributeError, KeyError):
+    except (json.JSONDecodeError, IndexError, AttributeError, KeyError) as exc:
+        logger.warning("catalog_field_mapping_llm_response_unparseable", error=str(exc))
         return {}
 
     return {

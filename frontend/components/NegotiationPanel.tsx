@@ -36,12 +36,16 @@ function Bubble({ event }: { event: AuditEvent }) {
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase opacity-70">
           {isBuyer ? "Buyer Agent" : "Merchant Agent"}
           {settled && (
-            <span className="text-emerald-600 dark:text-emerald-400">✓ Settled</span>
+            <span className="text-emerald-600 dark:text-emerald-400">
+              ✓ Settled
+            </span>
           )}
         </div>
         <p>{event.message}</p>
         {price !== null && (
-          <p className="mt-1 font-mono text-xs opacity-80">₹{price.toFixed(2)}/unit</p>
+          <p className="mt-1 font-mono text-xs opacity-80">
+            ₹{price.toFixed(2)}/unit
+          </p>
         )}
       </div>
     </div>
@@ -80,7 +84,9 @@ export default function NegotiationPanel() {
             No negotiation activity yet.
           </p>
         ) : (
-          negotiationEvents.map((event, idx) => <Bubble key={idx} event={event} />)
+          negotiationEvents.map((event, idx) => (
+            <Bubble key={idx} event={event} />
+          ))
         )}
       </div>
     </div>

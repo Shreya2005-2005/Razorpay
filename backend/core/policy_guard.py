@@ -1,3 +1,6 @@
+"""Buyer-side guardrails: checks a prospective order against config/policy.yaml
+before checkout is allowed to proceed."""
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -12,6 +15,7 @@ POLICY_PATH = Path(__file__).resolve().parent.parent / "config" / "policy.yaml"
 
 @lru_cache
 def load_policy() -> PolicyConfig:
+    """Load and cache the policy config from config/policy.yaml."""
     raw = yaml.safe_load(POLICY_PATH.read_text(encoding="utf-8"))
     return PolicyConfig(**raw)
 
@@ -97,7 +101,9 @@ def check_order(
     """
     policy = policy or load_policy()
     effective_price = unit_price_inr if unit_price_inr is not None else product.price_inr
-    available_stock = 0 if failure_injector.get_armed_mode(product.product_id) == "stock_out" else product.stock
+    available_stock = (
+        0 if failure_injector.get_armed_mode(product.product_id) == "stock_out" else product.stock
+    )
 
     result = _evaluate(
         product, quantity, orders_this_session, effective_price, policy, available_stock

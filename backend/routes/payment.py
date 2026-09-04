@@ -1,3 +1,6 @@
+"""Razorpay checkout: create an order, serve the browser-side pay page,
+receive the client callback, and expose payment status by order id."""
+
 import os
 
 from fastapi import APIRouter, HTTPException
@@ -17,7 +20,7 @@ router = APIRouter(prefix="/api/payment", tags=["payment"])
 
 
 @router.post("/checkout", response_model=CheckoutStartResult)
-def start_checkout(body: CheckoutRequest):
+def start_checkout(body: CheckoutRequest) -> CheckoutStartResult:
     """Policy-check the order, then create a real Razorpay test-mode Order.
     Completing the actual payment requires a human at the returned checkout_url
     (Razorpay's test cards need a browser — see /api/payment/pay/{order_id})."""
@@ -33,17 +36,16 @@ def start_checkout(body: CheckoutRequest):
             detail=f"Product '{body.product_id}' not found in {body.catalog_file}",
         )
 
-    result = initiate_checkout(
+    return initiate_checkout(
         product=product,
         quantity=body.quantity,
         orders_this_session=body.orders_this_session,
         unit_price_inr=body.unit_price_inr,
     )
-    return CheckoutStartResult(**result)
 
 
 @router.get("/pay/{order_id}", response_class=HTMLResponse)
-def checkout_page(order_id: str):
+def checkout_page(order_id: str) -> HTMLResponse:
     """Minimal Checkout.js page for manually completing a test-mode payment —
     Razorpay's card flow requires a browser, there is no headless API path
     enabled on this account (see write-up in the Stage 7 changelog)."""
@@ -116,7 +118,7 @@ def checkout_page(order_id: str):
 
 
 @router.post("/callback", response_model=PaymentResult)
-def payment_callback(body: PaymentCallbackRequest):
+def payment_callback(body: PaymentCallbackRequest) -> PaymentResult:
     """Called by the checkout page's JS once Razorpay reports an outcome.
     The client's claim is never trusted directly — finalize_payment always
     re-fetches the real status from Razorpay's Payments API."""
@@ -128,8 +130,11 @@ def payment_callback(body: PaymentCallbackRequest):
 
 
 @router.get("/status/{order_id}", response_model=PaymentResult)
-def payment_status(order_id: str):
+def payment_status(order_id: str) -> PaymentResult:
+    """Poll for the outcome of a payment once the browser callback has fired."""
     result = get_result(order_id)
     if result is None:
-        raise HTTPException(status_code=404, detail="No payment outcome recorded yet for this order")
+        raise HTTPException(
+            status_code=404, detail="No payment outcome recorded yet for this order"
+        )
     return result

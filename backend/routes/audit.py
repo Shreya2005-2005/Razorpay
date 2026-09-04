@@ -1,3 +1,7 @@
+"""Read and stream the business audit trail (see core.audit_trail) — the
+record of every decision, guardrail check, negotiation turn, and payment
+call an agent run produces."""
+
 from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
 
@@ -8,12 +12,13 @@ router = APIRouter(prefix="/api/audit", tags=["audit"])
 
 
 @router.get("/events", response_model=list[AuditEvent])
-def get_events():
+def get_events() -> list[AuditEvent]:
+    """Return the full audit trail accumulated so far, oldest first."""
     return audit_trail.history()
 
 
 @router.post("/events", response_model=AuditEvent)
-def emit_event(body: AuditEventRequest):
+def emit_event(body: AuditEventRequest) -> AuditEvent:
     """Manually emit a test event — useful for exercising the trail before agents wire into it."""
     return audit_trail.emit(
         actor=body.actor,
@@ -25,7 +30,9 @@ def emit_event(body: AuditEventRequest):
 
 
 @router.get("/stream")
-async def stream_events(request: Request):
+async def stream_events(request: Request) -> EventSourceResponse:
+    """Server-sent events stream: the full history as a backlog, then every
+    new event live, until the client disconnects."""
     # Subscribe before snapshotting history so no event emitted in between is lost or duplicated.
     queue = audit_trail.subscribe()
     history_snapshot = audit_trail.history()

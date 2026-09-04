@@ -1,3 +1,5 @@
+"""Serve a merchant catalog file translated into the standard Product schema."""
+
 from fastapi import APIRouter, HTTPException
 
 from core.catalog_translator import CatalogTranslationError, translate_catalog
@@ -7,7 +9,7 @@ router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
 
 @router.get("/{catalog_file}", response_model=list[Product])
-def get_catalog(catalog_file: str):
+def get_catalog(catalog_file: str) -> list[Product]:
     """Translate a merchant catalog file into the standard Product schema."""
     try:
         return translate_catalog(catalog_file)

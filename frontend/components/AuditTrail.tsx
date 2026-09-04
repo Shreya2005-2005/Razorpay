@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import { useAuditTrail, type ConnectionState } from "@/hooks/useAuditTrail";
 import type { AuditActor, AuditEvent } from "@/lib/types";
 
-const ACTOR_STYLES: Record<AuditActor, { dot: string; badge: string; label: string }> = {
+const ACTOR_STYLES: Record<
+  AuditActor,
+  { dot: string; badge: string; label: string }
+> = {
   buyer_agent: {
     dot: "bg-blue-500",
     badge: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300",
@@ -12,17 +15,20 @@ const ACTOR_STYLES: Record<AuditActor, { dot: string; badge: string; label: stri
   },
   merchant_agent: {
     dot: "bg-purple-500",
-    badge: "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300",
+    badge:
+      "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300",
     label: "Merchant Agent",
   },
   policy_guard: {
     dot: "bg-amber-500",
-    badge: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+    badge:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
     label: "Policy Guard",
   },
   razorpay: {
     dot: "bg-green-500",
-    badge: "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300",
+    badge:
+      "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300",
     label: "Razorpay",
   },
   system: {
@@ -41,7 +47,10 @@ const EVENT_TYPE_STYLES: Record<string, string> = {
   recovery: "text-teal-600 dark:text-teal-400",
 };
 
-const CONNECTION_STYLES: Record<ConnectionState, { dot: string; label: string }> = {
+const CONNECTION_STYLES: Record<
+  ConnectionState,
+  { dot: string; label: string }
+> = {
   connecting: { dot: "bg-amber-400", label: "Connecting…" },
   open: { dot: "bg-green-500", label: "Live" },
   error: { dot: "bg-red-500", label: "Reconnecting…" },
@@ -64,16 +73,23 @@ function AuditRow({ event }: { event: AuditEvent }) {
 
   return (
     <div className="flex gap-3 border-b border-zinc-100 px-4 py-2.5 last:border-b-0 dark:border-zinc-800/60">
-      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${style.dot}`} aria-hidden />
+      <span
+        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${style.dot}`}
+        aria-hidden
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">
             {formatTime(event.timestamp)}
           </span>
-          <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${style.badge}`}>
+          <span
+            className={`rounded px-1.5 py-0.5 text-xs font-medium ${style.badge}`}
+          >
             {style.label}
           </span>
-          <span className={`text-xs font-medium tracking-wide uppercase ${eventTypeClass}`}>
+          <span
+            className={`text-xs font-medium tracking-wide uppercase ${eventTypeClass}`}
+          >
             {event.event_type.replace("_", " ")}
           </span>
         </div>
@@ -121,7 +137,11 @@ export default function AuditTrail() {
           {status.label}
         </div>
       </div>
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+      >
         {events.length === 0 ? (
           <p className="p-6 text-center text-sm text-zinc-400">
             No events yet — start a buyer agent session to see activity here.

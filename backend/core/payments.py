@@ -1,9 +1,15 @@
+"""Razorpay integration: create orders, verify signatures, and settle
+payments against the real Payments API (never trusting the client's claim)."""
+
 import os
 
 import razorpay
 
 from core.audit_trail import audit_trail, current_session_id
+from core.logging_config import get_logger
 from models.schemas import PaymentResult
+
+logger = get_logger(__name__)
 
 RAZORPAY_ERRORS = (
     razorpay.errors.BadRequestError,
@@ -44,6 +50,9 @@ def create_order(product_id: str, amount_inr: float, receipt: str) -> dict:
         }
     )
     _order_sessions[order["id"]] = current_session_id()
+    logger.info(
+        "razorpay_order_created", order_id=order["id"], amount_inr=amount_inr, product_id=product_id
+    )
     audit_trail.emit(
         actor="razorpay",
         event_type="payment_call",
@@ -54,10 +63,12 @@ def create_order(product_id: str, amount_inr: float, receipt: str) -> dict:
 
 
 def fetch_order(order_id: str) -> dict:
+    """Fetch a Razorpay Order's current state directly from the Orders API."""
     return _client().order.fetch(order_id)
 
 
 def get_result(order_id: str) -> PaymentResult | None:
+    """The settled outcome for an order, if finalize_payment has run for it yet."""
     return _pending_results.get(order_id)
 
 
@@ -83,6 +94,7 @@ def finalize_payment(
                 }
             )
         except razorpay.errors.SignatureVerificationError as exc:
+            logger.warning("razorpay_signature_invalid", order_id=order_id, payment_id=payment_id)
             result = PaymentResult(
                 success=False,
                 order_id=order_id,
@@ -103,6 +115,9 @@ def finalize_payment(
     try:
         payment = client.payment.fetch(payment_id)
     except RAZORPAY_ERRORS as exc:
+        logger.warning(
+            "razorpay_fetch_failed", order_id=order_id, payment_id=payment_id, error=str(exc)
+        )
         result = PaymentResult(
             success=False,
             order_id=order_id,

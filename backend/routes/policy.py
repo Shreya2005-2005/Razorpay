@@ -1,3 +1,6 @@
+"""Read the active policy config, and check a prospective order against it
+without actually initiating checkout."""
+
 from fastapi import APIRouter, HTTPException
 
 from core.catalog_translator import CatalogTranslationError, translate_catalog
@@ -8,12 +11,16 @@ router = APIRouter(prefix="/api/policy", tags=["policy"])
 
 
 @router.get("", response_model=PolicyConfig)
-def get_policy():
+def get_policy() -> PolicyConfig:
+    """Return the currently configured buyer-side policy (spend caps,
+    category rules, approval thresholds)."""
     return load_policy()
 
 
 @router.post("/check-order", response_model=PolicyResult)
-def check_order_route(body: OrderCheckRequest):
+def check_order_route(body: OrderCheckRequest) -> PolicyResult:
+    """Dry-run the policy guard against a hypothetical order, without
+    initiating checkout or touching Razorpay."""
     try:
         catalog = translate_catalog(body.catalog_file)
     except CatalogTranslationError as exc:
