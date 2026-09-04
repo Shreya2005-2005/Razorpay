@@ -50,6 +50,8 @@ def negotiate(
                 metadata={
                     "product_id": product.product_id,
                     "settled_price_inr": settled_price,
+                    "list_price_inr": product.price_inr,
+                    "quantity": quantity,
                     "round": round_num,
                 },
             )
@@ -87,7 +89,13 @@ def negotiate(
                     f"Round {round_num}: buyer accepts merchant's counter of "
                     f"₹{merchant_counter:.2f}/unit"
                 ),
-                metadata={"product_id": product.product_id, "round": round_num},
+                metadata={
+                    "product_id": product.product_id,
+                    "settled_price_inr": merchant_counter,
+                    "list_price_inr": product.price_inr,
+                    "quantity": quantity,
+                    "round": round_num,
+                },
             )
             return NegotiationResult(
                 product_id=product.product_id,

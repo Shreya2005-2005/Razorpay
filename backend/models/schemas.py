@@ -45,6 +45,7 @@ AuditEventType = Literal[
     "payment_call",
     "failure",
     "recovery",
+    "stopped",
 ]
 
 

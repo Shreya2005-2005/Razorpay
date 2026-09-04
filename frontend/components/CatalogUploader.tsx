@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchCatalog } from "@/lib/api";
 import type { Product } from "@/lib/types";
 
@@ -27,6 +27,11 @@ export default function CatalogUploader({
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
   const [loadedFor, setLoadedFor] = useState(value);
+  // Suppresses the swap flash on the very first load — it's only meant to
+  // confirm a *change*, since that's the thing that's easy to miss.
+  const hasLoadedOnceRef = useRef(false);
+  const [justSwapped, setJustSwapped] = useState(false);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (loadedFor !== value) {
     setLoadedFor(value);
@@ -43,6 +48,16 @@ export default function CatalogUploader({
         setProducts(data);
         onProductsChange?.(data);
         setStatus("done");
+
+        if (hasLoadedOnceRef.current) {
+          setJustSwapped(true);
+          if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+          flashTimeoutRef.current = setTimeout(
+            () => setJustSwapped(false),
+            1400
+          );
+        }
+        hasLoadedOnceRef.current = true;
       })
       .catch((err) => {
         if (cancelled) return;
@@ -57,19 +72,36 @@ export default function CatalogUploader({
     };
   }, [value, onProductsChange]);
 
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, []);
+
   const extension = value.split(".").pop()?.toLowerCase() ?? "";
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mb-3 flex items-center justify-between">
+    <div
+      className={`rounded-xl border bg-white p-4 shadow-sm transition-all duration-700 dark:bg-zinc-950 ${
+        justSwapped
+          ? "border-emerald-400 ring-2 ring-emerald-300/60 dark:border-emerald-500 dark:ring-emerald-500/40"
+          : "border-zinc-200 ring-2 ring-transparent dark:border-zinc-800"
+      }`}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Merchant Catalog
         </h2>
-        {status === "done" && (
-          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-            parsed from .{extension}
-          </span>
-        )}
+        <span
+          className={`text-xs font-medium transition-opacity duration-700 ${
+            justSwapped
+              ? "text-emerald-600 opacity-100 dark:text-emerald-400"
+              : "opacity-0"
+          }`}
+          aria-hidden={!justSwapped}
+        >
+          ✓ Catalog swapped — re-parsed from scratch
+        </span>
       </div>
 
       <select
@@ -93,10 +125,18 @@ export default function CatalogUploader({
 
       {status === "done" && (
         <>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <span aria-hidden>✓</span> parsed from .{extension}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
+              {products.length} product{products.length === 1 ? "" : "s"}{" "}
+              normalized
+            </span>
+          </div>
           <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-            {products.length} item{products.length === 1 ? "" : "s"} normalized
-            to the standard schema — same shape regardless of the source
-            file&apos;s columns.
+            Same standard schema regardless of the source file&apos;s column
+            names — proof this works with any merchant&apos;s catalog format.
           </p>
           <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
             <table className="w-full text-left text-xs">

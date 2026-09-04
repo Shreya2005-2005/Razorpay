@@ -8,6 +8,7 @@ import uuid
 
 from groq import Groq
 
+from core import kill_switch
 from core.audit_trail import audit_trail, session_scope
 from core.catalog_translator import translate_catalog
 from core.checkout import initiate_checkout
@@ -200,7 +201,22 @@ class BuyerAgent:
     def run(self, max_turns: int = 15) -> str:
         """Run the tool-calling loop to completion and return the agent's final answer."""
         with session_scope(self.session_id):
-            return self._run(max_turns)
+            try:
+                return self._run(max_turns)
+            finally:
+                # Whether this run finished, failed, hit max_turns, or was
+                # stopped, its stop flag (if any) is no longer relevant.
+                kill_switch.clear(self.session_id)
+
+    def _stopped(self) -> str:
+        """Halt cleanly at a safe checkpoint: no tool call is in flight, so
+        nothing — including a checkout — is left partially done."""
+        audit_trail.emit(
+            actor="buyer_agent",
+            event_type="stopped",
+            message="Session stopped by user request before taking further action",
+        )
+        return "Stopped by user request."
 
     def _run(self, max_turns: int) -> str:
         system_prompt = (
@@ -236,6 +252,9 @@ class BuyerAgent:
         pending_recovery_from: dict | None = None
 
         for _ in range(max_turns):
+            if kill_switch.is_stop_requested(self.session_id):
+                return self._stopped()
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -257,6 +276,9 @@ class BuyerAgent:
                 return final_message
 
             for tool_call in message.tool_calls:
+                if kill_switch.is_stop_requested(self.session_id):
+                    return self._stopped()
+
                 name = tool_call.function.name
                 try:
                     args = json.loads(tool_call.function.arguments or "{}")

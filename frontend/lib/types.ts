@@ -7,7 +7,8 @@ export type AuditEventType =
   | "negotiation_turn"
   | "payment_call"
   | "failure"
-  | "recovery";
+  | "recovery"
+  | "stopped";
 
 export interface AuditEvent {
   timestamp: string;
