@@ -26,6 +26,7 @@ def start_session(body: SessionStartRequest) -> SessionResult:
             goal=body.goal,
             budget_inr=body.budget_inr,
             catalog_file=body.catalog_file,
+            customer_id=body.customer_id,
         )
     except CatalogTranslationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

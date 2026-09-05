@@ -42,4 +42,21 @@ describe("PolicyDashboard", () => {
       ).toBeInTheDocument()
     );
   });
+
+  describe("buyer variant", () => {
+    it("shows only a plain-language approval-threshold note", async () => {
+      vi.spyOn(api, "fetchPolicy").mockResolvedValue(samplePolicy);
+      render(<PolicyDashboard variant="buyer" />);
+
+      await waitFor(() =>
+        expect(
+          screen.getByText(/orders above ₹1000\.00 may need manual approval/i)
+        ).toBeInTheDocument()
+      );
+      expect(screen.queryByText(/max spend/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/max orders/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("gifts")).not.toBeInTheDocument();
+      expect(screen.queryByText("alcohol")).not.toBeInTheDocument();
+    });
+  });
 });

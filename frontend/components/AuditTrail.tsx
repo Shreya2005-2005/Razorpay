@@ -48,6 +48,14 @@ const EVENT_TYPE_STYLES: Record<string, string> = {
   failure: "text-red-600 dark:text-red-400",
   recovery: "text-teal-600 dark:text-teal-400",
   stopped: "text-orange-600 dark:text-orange-400",
+  loyalty_discount_applied: "text-purple-600 dark:text-purple-400",
+  upsell_offered: "text-pink-600 dark:text-pink-400",
+  upsell_accepted: "text-pink-600 dark:text-pink-400",
+  upsell_declined: "text-zinc-500 dark:text-zinc-400",
+  bundle_discount_applied: "text-purple-600 dark:text-purple-400",
+  coupon_nudge_shown: "text-fuchsia-600 dark:text-fuchsia-400",
+  coupon_nudge_converted: "text-fuchsia-600 dark:text-fuchsia-400",
+  low_stock_flagged: "text-amber-600 dark:text-amber-400",
 };
 
 const CONNECTION_STYLES: Record<
@@ -104,7 +112,14 @@ function AuditRow({ event }: { event: AuditEvent }) {
   );
 }
 
-export default function AuditTrail() {
+interface AuditTrailProps {
+  /** "full" (default) uses the technical "Audit Trail" heading — used in
+   * Merchant View. "buyer" reframes it as a trust/transparency feature;
+   * the log content and behavior are identical either way. */
+  variant?: "full" | "buyer";
+}
+
+export default function AuditTrail({ variant = "full" }: AuditTrailProps) {
   const { events, connectionState } = useAuditTrail();
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
@@ -133,7 +148,9 @@ export default function AuditTrail() {
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Audit Trail
+          {variant === "buyer"
+            ? "Full Transparency Log: every decision this agent made"
+            : "Audit Trail"}
         </h2>
         <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
           <span

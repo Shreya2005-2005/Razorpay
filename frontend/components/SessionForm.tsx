@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { startSession, stopSession } from "@/lib/api";
 import { useAuditTrail } from "@/hooks/useAuditTrail";
 import ComplianceCard from "@/components/ComplianceCard";
+import { getOrCreateCustomerId } from "@/lib/customerId";
 import { formatDuration, summarizeSession } from "@/lib/sessionSummary";
 
 type Status = "idle" | "running" | "done" | "error";
@@ -36,6 +37,7 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
         goal,
         budget_inr: budgetInr,
         catalog_file: catalogFile,
+        customer_id: getOrCreateCustomerId(),
       });
       setResultMessage(result.final_message);
       setStatus("done");
@@ -66,6 +68,29 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
     () => summarizeSession(events).durationMs,
     [events]
   );
+
+  const loyaltyNudgeMessage = useMemo(() => {
+    const discountAppliedEvent = events.find(
+      (e) => e.event_type === "loyalty_discount_applied"
+    );
+    if (discountAppliedEvent) {
+      const discountInr = discountAppliedEvent.metadata?.discount_inr;
+      return typeof discountInr === "number"
+        ? `You've unlocked ₹${discountInr.toFixed(0)} off!`
+        : null;
+    }
+    const nudgeEvent = events.find(
+      (e) => e.event_type === "coupon_nudge_shown"
+    );
+    if (nudgeEvent) {
+      const shortfallInr = nudgeEvent.metadata?.shortfall_inr;
+      const discountInr = nudgeEvent.metadata?.discount_inr;
+      if (typeof shortfallInr === "number" && typeof discountInr === "number") {
+        return `Add ₹${shortfallInr.toFixed(0)} more to get ₹${discountInr.toFixed(0)} off!`;
+      }
+    }
+    return null;
+  }, [events]);
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -139,6 +164,12 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
       {stopError && (
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">
           {stopError}
+        </p>
+      )}
+
+      {loyaltyNudgeMessage && (
+        <p className="mt-3 rounded-lg border border-purple-200 bg-purple-50 p-3 text-base font-bold text-purple-800 dark:border-purple-900/50 dark:bg-purple-500/10 dark:text-purple-300">
+          {loyaltyNudgeMessage}
         </p>
       )}
 
@@ -216,13 +247,13 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
 
       {status === "done" && durationMs !== null && (
         <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-          <span aria-hidden>⚡</span> Completed in {formatDuration(durationMs)}
+          Completed in {formatDuration(durationMs)}
         </p>
       )}
 
       {status === "done" && (
         <div className="mt-3">
-          <ComplianceCard />
+          <ComplianceCard variant="buyer" />
         </div>
       )}
     </div>

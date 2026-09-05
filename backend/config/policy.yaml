@@ -1,7 +1,10 @@
 # Policy Guard rules — every agent action that touches money or checkout
 # is checked against this file before it is allowed to proceed.
 
-max_spend_per_order: 1500
+# No per-order spend cap — kept as a large finite number (rather than removing
+# the field/check) so the guardrail code path and its dedicated tests stay
+# intact; nothing in the catalog can ever exceed this in practice.
+max_spend_per_order: 100000000
 max_orders_per_session: 1
 
 allowed_categories:
@@ -13,4 +16,4 @@ blocked_categories:
   - alcohol
   - weapons
 
-requires_human_approval_above: 1000
+requires_human_approval_above: 3000

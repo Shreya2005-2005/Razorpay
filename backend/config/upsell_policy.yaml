@@ -1,0 +1,12 @@
+# Add-on/upsell rules — checked deterministically at checkout time, never
+# left to the Buyer Agent's discretion (see core/upsell.py).
+
+enabled: true
+
+# Explicit product_id -> add-on product_id overrides. Falls back to
+# category_fallback below when a product has no explicit entry here.
+pairs_with: {}
+
+# When true, and no explicit pair is configured for a product, offer the
+# cheapest other in-stock item from the same category as the add-on.
+category_fallback: true

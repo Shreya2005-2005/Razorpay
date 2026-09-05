@@ -141,4 +141,74 @@ describe("ComplianceCard", () => {
 
     expect(screen.getByText(/compliance summary/i)).toBeInTheDocument();
   });
+
+  describe("buyer variant", () => {
+    it("shows a clean 'Payment confirmed' line once verification completes", () => {
+      mockUseAuditTrail.mockReturnValue({
+        events: [
+          ev({
+            actor: "razorpay",
+            event_type: "payment_call",
+            message: "Payment pay_1 captured for order order_1",
+            metadata: {
+              signature_verified: true,
+              payments_api_verified: true,
+            },
+          }),
+          finalDecision,
+        ],
+      });
+      render(<ComplianceCard variant="buyer" />);
+
+      expect(screen.getByText("Payment confirmed")).toBeInTheDocument();
+      expect(
+        screen.queryByText(/payment independently verified/i)
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows 'Confirming payment…' instead of a failure when captured but not yet verified", () => {
+      mockUseAuditTrail.mockReturnValue({
+        events: [
+          ev({
+            actor: "razorpay",
+            event_type: "payment_call",
+            message: "Payment pay_1 captured for order order_1",
+            metadata: {
+              signature_verified: false,
+              payments_api_verified: true,
+            },
+          }),
+          finalDecision,
+        ],
+      });
+      render(<ComplianceCard variant="buyer" />);
+
+      expect(screen.getByText("Confirming payment…")).toBeInTheDocument();
+      expect(
+        screen.queryByText(/captured, but not independently verified/i)
+      ).not.toBeInTheDocument();
+    });
+
+    it("still shows a real failure for an actually declined payment", () => {
+      mockUseAuditTrail.mockReturnValue({
+        events: [
+          ev({
+            actor: "razorpay",
+            event_type: "payment_call",
+            message: "Created order order_1 for ₹500.00",
+            metadata: { order_id: "order_1", amount_inr: 500 },
+          }),
+          ev({
+            actor: "razorpay",
+            event_type: "failure",
+            message: "Payment declined for X: card declined by issuing bank",
+          }),
+          finalDecision,
+        ],
+      });
+      render(<ComplianceCard variant="buyer" />);
+
+      expect(screen.getByText(/payment was declined/i)).toBeInTheDocument();
+    });
+  });
 });

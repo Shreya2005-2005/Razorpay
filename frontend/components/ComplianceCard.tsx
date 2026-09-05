@@ -40,10 +40,19 @@ function CheckRow({
   );
 }
 
+interface ComplianceCardProps {
+  /** "full" (default) shows the complete technical wording — used in
+   * Merchant View. "buyer" simplifies the payment-verification line so an
+   * in-progress independent verification doesn't read as a failure. */
+  variant?: "full" | "buyer";
+}
+
 /** A compliance-style checklist for a completed session — visually distinct
  * from the raw audit trail log, meant to answer "was this trustworthy?" at
  * a glance rather than requiring someone to read every event. */
-export default function ComplianceCard() {
+export default function ComplianceCard({
+  variant = "full",
+}: ComplianceCardProps) {
   const { events } = useAuditTrail();
   const summary = useMemo(() => summarizeSession(events), [events]);
 
@@ -72,6 +81,25 @@ export default function ComplianceCard() {
         ? "Payment was declined"
         : "Captured, but not independently verified";
 
+  // Buyer View: an unverified-but-captured payment is a deliberate,
+  // in-progress safety check, not a failure — an ✗ there reads as an error.
+  // Keep a real ✗ only for an actual decline.
+  const buyerPaymentState: CheckState =
+    paymentState === "fail" && !summary.payment.declined
+      ? "neutral"
+      : paymentState;
+  const buyerPaymentLabel =
+    buyerPaymentState === "pass"
+      ? "Payment confirmed"
+      : paymentState === "fail" && !summary.payment.declined
+        ? "Confirming payment…"
+        : "Payment independently verified";
+  const buyerPaymentDetail =
+    buyerPaymentState === "pass" ||
+    (paymentState === "fail" && !summary.payment.declined)
+      ? undefined
+      : paymentDetail;
+
   return (
     <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 shadow-sm dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900">
       <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
@@ -83,11 +111,19 @@ export default function ComplianceCard() {
           label="Policy guardrails enforced"
           detail={guardrailDetail}
         />
-        <CheckRow
-          state={paymentState}
-          label="Payment independently verified"
-          detail={paymentDetail}
-        />
+        {variant === "buyer" ? (
+          <CheckRow
+            state={buyerPaymentState}
+            label={buyerPaymentLabel}
+            detail={buyerPaymentDetail}
+          />
+        ) : (
+          <CheckRow
+            state={paymentState}
+            label="Payment independently verified"
+            detail={paymentDetail}
+          />
+        )}
         {summary.settlements.length > 0 && (
           <CheckRow
             state="pass"

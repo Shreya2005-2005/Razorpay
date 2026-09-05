@@ -225,3 +225,161 @@ describe("formatDuration", () => {
     expect(formatDuration(65000)).toBe("1m 5s");
   });
 });
+
+describe("summarizeSession loyalty facts", () => {
+  it("defaults to no loyalty activity", () => {
+    const summary = summarizeSession([]);
+    expect(summary.loyalty).toEqual({
+      discountApplied: false,
+      discountAppliedInr: 0,
+    });
+  });
+
+  it("detects a discount applied this session and its amount", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "system",
+        event_type: "loyalty_discount_applied",
+        message:
+          "🎁 ₹150.00 loyalty discount applied automatically — orders over ₹800 qualify!",
+        metadata: { customer_id: "cust-a", discount_inr: 150 },
+      }),
+    ]);
+    expect(summary.loyalty.discountApplied).toBe(true);
+    expect(summary.loyalty.discountAppliedInr).toBe(150);
+  });
+});
+
+describe("summarizeSession upsell facts", () => {
+  it("defaults to no upsell activity", () => {
+    const summary = summarizeSession([]);
+    expect(summary.upsell).toEqual({
+      offered: false,
+      accepted: false,
+      addOnName: null,
+      addOnPriceInr: 0,
+    });
+  });
+
+  it("detects an upsell offered and its add-on details", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "upsell_offered",
+        message: "Add a Gift Wrap for ₹49.00?",
+        metadata: {
+          product_id: "GS-101",
+          upsell_product_id: "GS-106",
+          upsell_name: "Gift Wrap",
+          upsell_price_inr: 49,
+        },
+      }),
+    ]);
+    expect(summary.upsell.offered).toBe(true);
+    expect(summary.upsell.accepted).toBe(false);
+    expect(summary.upsell.addOnName).toBe("Gift Wrap");
+    expect(summary.upsell.addOnPriceInr).toBe(49);
+  });
+
+  it("detects an upsell accepted", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "upsell_offered",
+        message: "Add a Gift Wrap for ₹49.00?",
+        metadata: { upsell_name: "Gift Wrap", upsell_price_inr: 49 },
+      }),
+      event({
+        actor: "buyer_agent",
+        event_type: "upsell_accepted",
+        message: "Added Gift Wrap (₹49.00) to the order",
+        metadata: { upsell_name: "Gift Wrap", upsell_price_inr: 49 },
+      }),
+    ]);
+    expect(summary.upsell.accepted).toBe(true);
+  });
+});
+
+describe("summarizeSession bundle facts", () => {
+  it("defaults to no bundle activity", () => {
+    const summary = summarizeSession([]);
+    expect(summary.bundle).toEqual({ applied: false, bundleName: null });
+  });
+
+  it("detects a bundle discount applied and its name", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "bundle_discount_applied",
+        message:
+          "Bundle discount 'Electronics Bundle' applied: 8% off for 2x GS-115",
+        metadata: {
+          product_id: "GS-115",
+          quantity: 2,
+          bundle_name: "Electronics Bundle",
+          discount_pct: 0.08,
+        },
+      }),
+    ]);
+    expect(summary.bundle.applied).toBe(true);
+    expect(summary.bundle.bundleName).toBe("Electronics Bundle");
+  });
+});
+
+describe("summarizeSession coupon nudge facts", () => {
+  it("defaults to no nudge activity", () => {
+    const summary = summarizeSession([]);
+    expect(summary.couponNudge).toEqual({ shown: false, converted: false });
+  });
+
+  it("detects a nudge shown", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "coupon_nudge_shown",
+        message: "Add ₹50.00 more to unlock ₹150 off!",
+        metadata: { product_id: "GS-108", total_inr: 750, shortfall_inr: 50 },
+      }),
+    ]);
+    expect(summary.couponNudge.shown).toBe(true);
+    expect(summary.couponNudge.converted).toBe(false);
+  });
+
+  it("detects a nudge that converted", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "coupon_nudge_shown",
+        message: "Add ₹50.00 more to unlock ₹150 off!",
+        metadata: { product_id: "GS-108" },
+      }),
+      event({
+        actor: "system",
+        event_type: "coupon_nudge_converted",
+        message:
+          "Buyer crossed the loyalty threshold after the nudge — coupon applied",
+        metadata: { product_id: "GS-108" },
+      }),
+    ]);
+    expect(summary.couponNudge.converted).toBe(true);
+  });
+});
+
+describe("summarizeSession low-stock facts", () => {
+  it("defaults to zero low-stock flags", () => {
+    const summary = summarizeSession([]);
+    expect(summary.lowStockFlagCount).toBe(0);
+  });
+
+  it("counts low-stock flags raised this session", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "merchant_agent",
+        event_type: "low_stock_flagged",
+        message: "Only 3 left in stock for GS-101",
+        metadata: { product_id: "GS-101", stock: 3 },
+      }),
+    ]);
+    expect(summary.lowStockFlagCount).toBe(1);
+  });
+});

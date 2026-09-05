@@ -7,3 +7,5 @@ cost_floor_pct: 0.75          # merchant will never accept less than this fracti
 active_promotion:
   category: electronics
   discount_pct: 0.05          # flat extra discount for this category, even on single-unit orders
+
+low_stock_threshold: 5        # below this many units left, surface a "low stock" signal

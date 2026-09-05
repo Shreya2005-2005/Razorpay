@@ -94,3 +94,18 @@ describe("AuditTrail narrative summary", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("AuditTrail heading", () => {
+  it("shows the technical heading by default", () => {
+    mockUseAuditTrail.mockReturnValue({ events: [], connectionState: "open" });
+    render(<AuditTrail />);
+    expect(screen.getByText("Audit Trail")).toBeInTheDocument();
+  });
+
+  it("shows a transparency-framed heading in the buyer variant", () => {
+    mockUseAuditTrail.mockReturnValue({ events: [], connectionState: "open" });
+    render(<AuditTrail variant="buyer" />);
+    expect(screen.queryByText("Audit Trail")).not.toBeInTheDocument();
+    expect(screen.getByText(/full transparency log/i)).toBeInTheDocument();
+  });
+});

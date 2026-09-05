@@ -24,6 +24,25 @@ const BASE: SessionSummary = {
   isComplete: false,
   negotiationRounds: 0,
   recoveries: [],
+  loyalty: {
+    discountApplied: false,
+    discountAppliedInr: 0,
+  },
+  upsell: {
+    offered: false,
+    accepted: false,
+    addOnName: null,
+    addOnPriceInr: 0,
+  },
+  bundle: {
+    applied: false,
+    bundleName: null,
+  },
+  couponNudge: {
+    shown: false,
+    converted: false,
+  },
+  lowStockFlagCount: 0,
 };
 
 describe("generateSessionNarrative", () => {

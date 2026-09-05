@@ -1,10 +1,16 @@
 """finalize_payment's audit trail metadata: the compliance summary (Feature
 3, frontend) reads signature_verified/payments_api_verified directly from
 here rather than inferring them from message text, so this locks in that
-both are set correctly for a real captured payment."""
+both are set correctly for a real captured payment. Also covers
+finalize_payment's loyalty wiring — see test_loyalty.py for core.loyalty's
+own discount/purchase-counting logic, which this doesn't re-test."""
 
+import razorpay
+
+import core.payments as payments_module
+from core import loyalty
 from core.audit_trail import audit_trail
-from core.payments import finalize_payment
+from core.payments import finalize_payment, get_result
 
 
 class _FakePaymentAPI:
@@ -64,3 +70,56 @@ def test_captured_payment_without_signature_marks_signature_unverified(monkeypat
     meta = _captured_event()
     assert meta["signature_verified"] is False
     assert meta["payments_api_verified"] is True
+
+
+def test_captured_payment_records_a_purchase_for_the_known_customer(monkeypatch):
+    fake_client = _FakeClient(_FakePaymentAPI({"status": "captured", "amount": 100000}))
+    monkeypatch.setattr("core.payments._client", lambda: fake_client)
+    payments_module._order_customers["order_3"] = "cust-a"
+
+    result = finalize_payment(order_id="order_3", payment_id="pay_3")
+
+    assert result.success is True
+    assert loyalty.purchase_count("cust-a") == 1
+
+
+def test_captured_payment_without_a_known_customer_skips_purchase_recording(monkeypatch):
+    fake_client = _FakeClient(_FakePaymentAPI({"status": "captured", "amount": 50000}))
+    monkeypatch.setattr("core.payments._client", lambda: fake_client)
+    record_calls = []
+    monkeypatch.setattr(
+        loyalty, "record_purchase", lambda customer_id: record_calls.append(customer_id)
+    )
+
+    result = finalize_payment(order_id="order_unknown", payment_id="pay_5")
+
+    assert result.success is True
+    assert record_calls == []
+
+
+def test_authorized_payment_that_races_razorpays_auto_capture_still_settles(monkeypatch):
+    # Orders are created with payment_capture=1 (see create_order), so
+    # Razorpay may auto-capture before this callback's own capture call
+    # runs — Razorpay then rejects that call as already-captured. This must
+    # not crash the callback and leave no result recorded (see core/payments.py):
+    # the fallback re-fetches the payment, which by then reports "captured".
+    class _RaceCapturePaymentAPI:
+        def __init__(self):
+            self.fetch_calls = 0
+
+        def fetch(self, payment_id: str) -> dict:
+            self.fetch_calls += 1
+            status = "authorized" if self.fetch_calls == 1 else "captured"
+            return {"status": status, "amount": 75000}
+
+        def capture(self, payment_id: str, amount: int) -> dict:
+            raise razorpay.errors.BadRequestError("This payment has already been captured")
+
+    fake_client = _FakeClient(_RaceCapturePaymentAPI())
+    monkeypatch.setattr("core.payments._client", lambda: fake_client)
+
+    result = finalize_payment(order_id="order_race", payment_id="pay_race")
+
+    assert result.success is True
+    assert result.status == "captured"
+    assert get_result("order_race") is not None

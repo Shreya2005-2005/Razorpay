@@ -8,10 +8,11 @@ import uuid
 
 from groq import Groq
 
-from core import kill_switch
+from core import kill_switch, loyalty
 from core.audit_trail import audit_trail, session_scope
 from core.catalog_translator import translate_catalog
 from core.checkout import initiate_checkout
+from core.merchant_agent import MerchantAgent
 from core.negotiation import negotiate
 from models.schemas import Product
 
@@ -84,7 +85,9 @@ TOOLS = [
                 "Complete purchase of a product. Checked against policy (spend cap, "
                 "category rules, stock, session order limit) before a real payment is "
                 "attempted. Pass unit_price_inr if you negotiated a price; otherwise "
-                "the product's listed price is charged."
+                "the product's listed price is charged. A complementary add-on may be "
+                "offered and automatically included if it fits the remaining budget — "
+                "check the result's 'upsell' field."
             ),
             "parameters": {
                 "type": "object",
@@ -108,11 +111,18 @@ class BuyerAgent:
     every decision to the audit trail. Checkout is gated by the policy guard and
     settles via a real Razorpay test-mode payment."""
 
-    def __init__(self, goal: str, budget_inr: float, catalog_file: str = "catalog_demo_1.csv"):
+    def __init__(
+        self,
+        goal: str,
+        budget_inr: float,
+        catalog_file: str = "catalog_demo_1.csv",
+        customer_id: str | None = None,
+    ):
         self.session_id = str(uuid.uuid4())
         self.goal = goal
         self.budget_inr = budget_inr
         self.catalog_file = catalog_file
+        self.customer_id = customer_id
         self.catalog: list[Product] = translate_catalog(catalog_file)
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
@@ -134,7 +144,10 @@ class BuyerAgent:
     def _get_product_details(self, product_id: str) -> dict:
         for product in self.catalog:
             if product.product_id == product_id:
-                return product.model_dump()
+                details = product.model_dump()
+                if MerchantAgent().is_low_stock(product):
+                    details["low_stock_warning"] = f"Only {product.stock} left in stock."
+                return details
         return {"error": f"No product with id '{product_id}'"}
 
     def _negotiate_with_merchant(
@@ -159,6 +172,9 @@ class BuyerAgent:
             quantity=quantity,
             orders_this_session=self.orders_this_session,
             unit_price_inr=unit_price_inr,
+            customer_id=self.customer_id,
+            catalog=self.catalog,
+            budget_inr=self.budget_inr,
         )
         result = checkout_result.model_dump(exclude_none=True)
         if checkout_result.status == "awaiting_payment":
@@ -167,6 +183,16 @@ class BuyerAgent:
                 "requires a human in a browser — tell the user to open checkout_url "
                 "and pay with a Razorpay test card, then check status_url for the result."
             )
+            if checkout_result.upsell is not None:
+                result["note"] += (
+                    " An add-on was "
+                    + (
+                        "included"
+                        if checkout_result.upsell.accepted
+                        else "offered but not included"
+                    )
+                    + " automatically — see the 'upsell' field for details; mention it to the user."
+                )
         return result
 
     def _dispatch_tool(self, name: str, args: dict) -> dict:
@@ -219,9 +245,17 @@ class BuyerAgent:
         return "Stopped by user request."
 
     def _run(self, max_turns: int) -> str:
+        loyalty_policy = loyalty.load_loyalty_policy()
+        loyalty_note = (
+            f"\nAny order over ₹{loyalty_policy.min_purchase_for_discount_inr:.0f} "
+            f"automatically gets ₹{loyalty_policy.discount_inr:.0f} off at checkout — this "
+            "happens on its own, you don't need to do anything special to trigger it, but "
+            "feel free to mention it to the user if it applies.\n"
+        )
         system_prompt = (
             "You are a buyer agent shopping a merchant catalog on behalf of a user. "
             f"Goal: {self.goal}\nBudget: ₹{self.budget_inr}\n"
+            f"{loyalty_note}"
             "Only use information returned by your tools — never invent product ids, "
             "prices, or stock levels. Use search_catalog and get_product_details to find "
             "and verify options before recommending or acting. Stay within budget. "

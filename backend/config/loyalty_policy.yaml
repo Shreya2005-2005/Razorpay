@@ -1,0 +1,15 @@
+# Loyalty discount rule — enforced deterministically in core/checkout.py,
+# not left to the Buyer Agent's discretion (same philosophy as
+# config/merchant_policy.yaml: pricing rules should be predictable and
+# auditable, not something an LLM might apply inconsistently).
+
+# Any order whose pre-discount total is at least this qualifies, automatically.
+min_purchase_for_discount_inr: 800
+
+# Flat rupee discount applied to a qualifying order.
+discount_inr: 150
+
+# During negotiation, if the settling total is under the threshold above by
+# no more than this margin, the Merchant Agent nudges the buyer to add a
+# little more to unlock the discount (see core/negotiation.py).
+nudge_margin_inr: 100

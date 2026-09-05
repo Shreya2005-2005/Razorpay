@@ -88,4 +88,20 @@ describe("CatalogUploader", () => {
       )
     );
   });
+
+  it("hides the parsed-from badge in the buyer variant, but keeps the product count", async () => {
+    vi.spyOn(api, "fetchCatalog").mockResolvedValue(demoProducts);
+    render(
+      <CatalogUploader
+        value="catalog_demo_1.csv"
+        onChange={() => {}}
+        variant="buyer"
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText(/2 products normalized/i)).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/parsed from \.csv/i)).not.toBeInTheDocument();
+  });
 });
