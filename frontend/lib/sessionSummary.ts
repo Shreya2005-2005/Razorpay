@@ -30,6 +30,11 @@ export interface LoyaltySummary {
   discountAppliedInr: number;
 }
 
+export interface FirstPurchaseSummary {
+  discountApplied: boolean;
+  discountAppliedInr: number;
+}
+
 export interface UpsellSummary {
   offered: boolean;
   accepted: boolean;
@@ -64,6 +69,7 @@ export interface SessionSummary {
   negotiationRounds: number;
   recoveries: string[];
   loyalty: LoyaltySummary;
+  firstPurchase: FirstPurchaseSummary;
   upsell: UpsellSummary;
   bundle: BundleSummary;
   couponNudge: CouponNudgeSummary;
@@ -203,6 +209,17 @@ export function summarizeSession(events: AuditEvent[]): SessionSummary {
         : 0,
   };
 
+  const firstPurchaseDiscountEvent = events.find(
+    (e) => e.event_type === "first_purchase_discount_applied"
+  );
+  const firstPurchase: FirstPurchaseSummary = {
+    discountApplied: !!firstPurchaseDiscountEvent,
+    discountAppliedInr:
+      typeof firstPurchaseDiscountEvent?.metadata?.discount_inr === "number"
+        ? firstPurchaseDiscountEvent.metadata.discount_inr
+        : 0,
+  };
+
   const upsellOfferedEvent = events.find(
     (e) => e.event_type === "upsell_offered"
   );
@@ -289,6 +306,7 @@ export function summarizeSession(events: AuditEvent[]): SessionSummary {
     negotiationRounds,
     recoveries,
     loyalty,
+    firstPurchase,
     upsell,
     bundle,
     couponNudge,

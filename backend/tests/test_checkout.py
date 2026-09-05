@@ -1,17 +1,32 @@
-"""core.checkout.initiate_checkout's loyalty-discount, upsell, and
-coupon-nudge-conversion integration: applying/offering things deterministically
-at checkout time, and never on a path that doesn't actually create an order."""
+"""core.checkout.initiate_checkout's discount (first-purchase and loyalty),
+upsell, and coupon-nudge-conversion integration: applying/offering things
+deterministically at checkout time, and never on a path that doesn't
+actually create an order."""
 
-from core import failure_injector, loyalty
+from core import failure_injector, first_purchase, loyalty
 from core.audit_trail import audit_trail, session_scope
 from core.checkout import initiate_checkout
-from models.schemas import LoyaltyPolicyConfig, PolicyConfig, Product, UpsellPolicyConfig
+from models.schemas import (
+    FirstPurchasePolicyConfig,
+    LoyaltyPolicyConfig,
+    PolicyConfig,
+    Product,
+    UpsellPolicyConfig,
+)
 
 LOYALTY_POLICY = LoyaltyPolicyConfig(min_purchase_for_discount_inr=800, discount_inr=150)
 
 # Deliberately far from any test's order amounts, so upsell/nudge tests below
 # don't accidentally also trigger the loyalty discount unless they mean to.
 NO_LOYALTY_POLICY = LoyaltyPolicyConfig(min_purchase_for_discount_inr=999999, discount_inr=150)
+
+# The first-purchase discount takes priority over the loyalty discount (see
+# initiate_checkout) and would otherwise fire for any customer_id that
+# hasn't purchased before — which every customer_id below is, since
+# core.loyalty's purchase-count state is reset per test. Tests that mean to
+# exercise loyalty-discount behavior specifically disable it via this.
+DISABLED_FIRST_PURCHASE_POLICY = FirstPurchasePolicyConfig(enabled=False, discount_pct=0.5)
+FIRST_PURCHASE_POLICY = FirstPurchasePolicyConfig(enabled=True, discount_pct=0.5)
 
 
 def _fake_create_order(monkeypatch, order_id: str = "order_test_1"):
@@ -29,6 +44,17 @@ def _fake_create_order(monkeypatch, order_id: str = "order_test_1"):
 
 def _use_loyalty_policy(monkeypatch, policy: LoyaltyPolicyConfig = LOYALTY_POLICY):
     monkeypatch.setattr(loyalty, "load_loyalty_policy", lambda: policy)
+    # Isolates loyalty-discount tests from the first-purchase discount,
+    # which would otherwise take priority for every customer_id here.
+    monkeypatch.setattr(
+        first_purchase, "load_first_purchase_policy", lambda: DISABLED_FIRST_PURCHASE_POLICY
+    )
+
+
+def _use_first_purchase_policy(
+    monkeypatch, policy: FirstPurchasePolicyConfig = FIRST_PURCHASE_POLICY
+):
+    monkeypatch.setattr(first_purchase, "load_first_purchase_policy", lambda: policy)
 
 
 def test_applies_discount_when_order_meets_minimum(monkeypatch, product):
@@ -345,3 +371,108 @@ def test_no_coupon_nudge_converted_without_a_prior_nudge(monkeypatch, product):
     initiate_checkout(product=product, quantity=1, orders_this_session=0, customer_id="cust-a")
 
     assert not any(e.event_type == "coupon_nudge_converted" for e in audit_trail.history())
+
+
+def test_first_purchase_discount_applied_for_a_new_customer(monkeypatch, product):
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    _use_first_purchase_policy(monkeypatch)
+    calls = _fake_create_order(monkeypatch)
+
+    result = initiate_checkout(
+        product=product, quantity=1, orders_this_session=0, customer_id="cust-new"
+    )
+
+    assert result.status == "awaiting_payment"
+    assert result.amount_inr == 500.0
+    assert calls[0]["amount_inr"] == 500.0
+
+    applied = [
+        e for e in audit_trail.history() if e.event_type == "first_purchase_discount_applied"
+    ]
+    assert len(applied) == 1
+    assert applied[0].metadata["discount_inr"] == 500.0
+    assert applied[0].metadata["customer_id"] == "cust-new"
+    assert not any(e.event_type == "loyalty_discount_applied" for e in audit_trail.history())
+
+
+def test_first_purchase_discount_does_not_apply_on_a_second_purchase(monkeypatch, product):
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    monkeypatch.setattr(loyalty, "load_loyalty_policy", lambda: NO_LOYALTY_POLICY)
+    _use_first_purchase_policy(monkeypatch)
+    _fake_create_order(monkeypatch)
+    loyalty.record_purchase("cust-repeat")
+
+    result = initiate_checkout(
+        product=product, quantity=1, orders_this_session=0, customer_id="cust-repeat"
+    )
+
+    assert result.amount_inr == 1000.0
+    assert not any(e.event_type == "first_purchase_discount_applied" for e in audit_trail.history())
+
+
+def test_first_purchase_discount_requires_a_customer_id(monkeypatch, product):
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    monkeypatch.setattr(loyalty, "load_loyalty_policy", lambda: NO_LOYALTY_POLICY)
+    _use_first_purchase_policy(monkeypatch)
+    _fake_create_order(monkeypatch)
+
+    result = initiate_checkout(product=product, quantity=1, orders_this_session=0)
+
+    assert result.amount_inr == 1000.0
+    assert not any(e.event_type == "first_purchase_discount_applied" for e in audit_trail.history())
+
+
+def test_first_purchase_discount_takes_priority_over_loyalty_discount(monkeypatch, product):
+    # Order qualifies for both: it's this customer's first purchase, and the
+    # total is above the loyalty minimum. Only the first-purchase discount
+    # (the bigger one here) should apply — they never stack.
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    monkeypatch.setattr(loyalty, "load_loyalty_policy", lambda: LOYALTY_POLICY)
+    _use_first_purchase_policy(monkeypatch)
+    calls = _fake_create_order(monkeypatch)
+
+    result = initiate_checkout(
+        product=product, quantity=1, orders_this_session=0, customer_id="cust-new"
+    )
+
+    assert result.amount_inr == 500.0
+    assert calls[0]["amount_inr"] == 500.0
+    assert any(e.event_type == "first_purchase_discount_applied" for e in audit_trail.history())
+    assert not any(e.event_type == "loyalty_discount_applied" for e in audit_trail.history())
+
+
+def test_loyalty_discount_applies_when_first_purchase_discount_is_disabled(monkeypatch, product):
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    monkeypatch.setattr(loyalty, "load_loyalty_policy", lambda: LOYALTY_POLICY)
+    _use_first_purchase_policy(
+        monkeypatch, FirstPurchasePolicyConfig(enabled=False, discount_pct=0.5)
+    )
+    calls = _fake_create_order(monkeypatch)
+
+    result = initiate_checkout(
+        product=product, quantity=1, orders_this_session=0, customer_id="cust-new"
+    )
+
+    assert result.amount_inr == 850.0
+    assert calls[0]["amount_inr"] == 850.0
+    assert any(e.event_type == "loyalty_discount_applied" for e in audit_trail.history())
+
+
+def test_first_purchase_discount_payment_decline_path_does_not_apply(monkeypatch, product):
+    product.category = "electronics"
+    product.price_inr = 1000.0
+    _use_first_purchase_policy(monkeypatch)
+    _fake_create_order(monkeypatch)
+    failure_injector.arm(product.product_id, "payment_decline")
+
+    result = initiate_checkout(
+        product=product, quantity=1, orders_this_session=0, customer_id="cust-new"
+    )
+
+    assert result.status == "failed"
+    assert not any(e.event_type == "first_purchase_discount_applied" for e in audit_trail.history())

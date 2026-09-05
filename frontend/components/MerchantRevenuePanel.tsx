@@ -52,6 +52,17 @@ export default function MerchantRevenuePanel() {
         )}
       </div>
 
+      {revenue.firstPurchase.discountsAppliedCount > 0 && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm font-semibold text-indigo-800 dark:border-indigo-900/50 dark:bg-indigo-500/10 dark:text-indigo-300">
+          🎉 {revenue.firstPurchase.discountsAppliedCount} new customer
+          {revenue.firstPurchase.discountsAppliedCount === 1 ? "" : "s"}{" "}
+          received the first-purchase discount — ₹
+          {revenue.firstPurchase.totalDiscountGivenInr.toFixed(2)} given in
+          discounts, contributing ₹
+          {revenue.firstPurchase.discountedRevenueInr.toFixed(2)} in revenue.
+        </div>
+      )}
+
       {revenue.loyalty.discountsAppliedCount > 0 && (
         <div className="rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm font-semibold text-purple-800 dark:border-purple-900/50 dark:bg-purple-500/10 dark:text-purple-300">
           🎁 {revenue.loyalty.discountsAppliedCount} order
@@ -102,6 +113,11 @@ export default function MerchantRevenuePanel() {
         <StatCard
           label="Upsells accepted"
           value={`${revenue.upsell.acceptedCount} / ${revenue.upsell.offeredCount}`}
+          tone="emerald"
+        />
+        <StatCard
+          label="First-purchase discounts applied"
+          value={String(revenue.firstPurchase.discountsAppliedCount)}
           tone="emerald"
         />
         <StatCard

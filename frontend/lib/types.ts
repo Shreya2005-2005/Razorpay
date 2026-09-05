@@ -16,7 +16,8 @@ export type AuditEventType =
   | "bundle_discount_applied"
   | "coupon_nudge_shown"
   | "coupon_nudge_converted"
-  | "low_stock_flagged";
+  | "low_stock_flagged"
+  | "first_purchase_discount_applied";
 
 export interface AuditEvent {
   timestamp: string;
