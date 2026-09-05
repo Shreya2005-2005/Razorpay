@@ -135,13 +135,14 @@ def test_session_blocked_by_policy_reports_reason_without_calling_razorpay(
                 _FakeToolCall(
                     "call_1",
                     "checkout",
-                    # 1200 > policy.yaml's requires_human_approval_above (1000) but
-                    # under max_spend_per_order (1500) — isolates the approval-gate reason.
-                    {"product_id": "sku-1", "quantity": 1, "unit_price_inr": 1200},
+                    # 3500 > policy.yaml's requires_human_approval_above (3000).
+                    # max_spend_per_order is effectively unbounded, so this is the
+                    # only price-based block left to isolate the approval-gate reason.
+                    {"product_id": "sku-1", "quantity": 1, "unit_price_inr": 3500},
                 )
             ]
         ),
-        _FakeMessage(content="Checkout was blocked because ₹1200 requires human approval."),
+        _FakeMessage(content="Checkout was blocked because ₹3500 requires human approval."),
     ]
 
     monkeypatch.setattr("agents.buyer_agent.Groq", lambda api_key: _FakeGroqClient(script))

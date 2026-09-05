@@ -16,12 +16,17 @@ interface CatalogUploaderProps {
   value: string;
   onChange: (file: string) => void;
   onProductsChange?: (products: Product[]) => void;
+  /** "full" (default) shows the data-ingestion badge — used in Merchant
+   * View. "buyer" hides it: it's a catalog-parsing detail, not something a
+   * buyer needs to see. */
+  variant?: "full" | "buyer";
 }
 
 export default function CatalogUploader({
   value,
   onChange,
   onProductsChange,
+  variant = "full",
 }: CatalogUploaderProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [status, setStatus] = useState<Status>("loading");
@@ -126,9 +131,11 @@ export default function CatalogUploader({
       {status === "done" && (
         <>
           <div className="mb-3 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-300">
-              <span aria-hidden>✓</span> parsed from .{extension}
-            </span>
+            {variant === "full" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <span aria-hidden>✓</span> parsed from .{extension}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
               {products.length} product{products.length === 1 ? "" : "s"}{" "}
               normalized

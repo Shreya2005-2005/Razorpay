@@ -5,6 +5,7 @@ import os
 
 import razorpay
 
+from core import loyalty
 from core.audit_trail import audit_trail, current_session_id
 from core.logging_config import get_logger
 from models.schemas import PaymentResult
@@ -27,6 +28,10 @@ _pending_results: dict[str, PaymentResult] = {}
 # ambient session context to tag events with; this is how it's recovered.
 _order_sessions: dict[str, str] = {}
 
+# Same idea, for the customer_id a captured payment should count as a
+# purchase for (see core.loyalty).
+_order_customers: dict[str, str] = {}
+
 
 def _client() -> razorpay.Client:
     key_id = os.getenv("RAZORPAY_KEY_ID")
@@ -36,7 +41,9 @@ def _client() -> razorpay.Client:
     return razorpay.Client(auth=(key_id, key_secret))
 
 
-def create_order(product_id: str, amount_inr: float, receipt: str) -> dict:
+def create_order(
+    product_id: str, amount_inr: float, receipt: str, customer_id: str | None = None
+) -> dict:
     """Create a real Razorpay test-mode Order. Raises RAZORPAY_ERRORS on failure."""
     client = _client()
     amount_paise = int(round(amount_inr * 100))
@@ -50,6 +57,8 @@ def create_order(product_id: str, amount_inr: float, receipt: str) -> dict:
         }
     )
     _order_sessions[order["id"]] = current_session_id()
+    if customer_id:
+        _order_customers[order["id"]] = customer_id
     logger.info(
         "razorpay_order_created", order_id=order["id"], amount_inr=amount_inr, product_id=product_id
     )
@@ -83,6 +92,7 @@ def finalize_payment(
     (Checkout.js success callback), it's verified first."""
     client = _client()
     session_id = _order_sessions.get(order_id, "")
+    customer_id = _order_customers.get(order_id, "")
 
     if signature:
         try:
@@ -139,8 +149,20 @@ def finalize_payment(
     amount_inr = (payment.get("amount") or 0) / 100
 
     if status == "authorized":
-        payment = client.payment.capture(payment_id, payment["amount"])
-        status = payment.get("status", status)
+        # Orders are created with payment_capture=1 (see create_order), so
+        # Razorpay auto-captures the payment on its own. If that finishes
+        # before this callback does, our own capture call races it and
+        # Razorpay rejects it as already-captured — re-fetch for the real
+        # status instead of letting that crash the callback and silently
+        # leave get_result() empty forever for a payment that actually
+        # succeeded (that's what caused status_url to look like it "lost"
+        # the order).
+        try:
+            payment = client.payment.capture(payment_id, payment["amount"])
+            status = payment.get("status", status)
+        except RAZORPAY_ERRORS:
+            payment = client.payment.fetch(payment_id)
+            status = payment.get("status", status)
 
     if status == "captured":
         result = PaymentResult(
@@ -168,6 +190,8 @@ def finalize_payment(
             },
             session_id=session_id,
         )
+        if customer_id:
+            loyalty.record_purchase(customer_id)
     else:
         reason = payment.get("error_description") or f"Payment ended in status '{status}'"
         result = PaymentResult(

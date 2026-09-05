@@ -25,6 +25,28 @@ export interface PaymentSummary {
   amountInr: number | null;
 }
 
+export interface LoyaltySummary {
+  discountApplied: boolean;
+  discountAppliedInr: number;
+}
+
+export interface UpsellSummary {
+  offered: boolean;
+  accepted: boolean;
+  addOnName: string | null;
+  addOnPriceInr: number;
+}
+
+export interface BundleSummary {
+  applied: boolean;
+  bundleName: string | null;
+}
+
+export interface CouponNudgeSummary {
+  shown: boolean;
+  converted: boolean;
+}
+
 export interface SessionSummary {
   goal: string | null;
   budgetInr: number | null;
@@ -41,6 +63,11 @@ export interface SessionSummary {
   isComplete: boolean;
   negotiationRounds: number;
   recoveries: string[];
+  loyalty: LoyaltySummary;
+  upsell: UpsellSummary;
+  bundle: BundleSummary;
+  couponNudge: CouponNudgeSummary;
+  lowStockFlagCount: number;
 }
 
 function isSettlementMessage(event: AuditEvent): boolean {
@@ -165,6 +192,56 @@ export function summarizeSession(events: AuditEvent[]): SessionSummary {
         : e.message
     );
 
+  const discountAppliedEvent = events.find(
+    (e) => e.event_type === "loyalty_discount_applied"
+  );
+  const loyalty: LoyaltySummary = {
+    discountApplied: !!discountAppliedEvent,
+    discountAppliedInr:
+      typeof discountAppliedEvent?.metadata?.discount_inr === "number"
+        ? discountAppliedEvent.metadata.discount_inr
+        : 0,
+  };
+
+  const upsellOfferedEvent = events.find(
+    (e) => e.event_type === "upsell_offered"
+  );
+  const upsellAcceptedEvent = events.find(
+    (e) => e.event_type === "upsell_accepted"
+  );
+  const upsell: UpsellSummary = {
+    offered: !!upsellOfferedEvent,
+    accepted: !!upsellAcceptedEvent,
+    addOnName:
+      typeof upsellOfferedEvent?.metadata?.upsell_name === "string"
+        ? upsellOfferedEvent.metadata.upsell_name
+        : null,
+    addOnPriceInr:
+      typeof upsellOfferedEvent?.metadata?.upsell_price_inr === "number"
+        ? upsellOfferedEvent.metadata.upsell_price_inr
+        : 0,
+  };
+
+  const bundleEvent = events.find(
+    (e) => e.event_type === "bundle_discount_applied"
+  );
+  const bundle: BundleSummary = {
+    applied: !!bundleEvent,
+    bundleName:
+      typeof bundleEvent?.metadata?.bundle_name === "string"
+        ? bundleEvent.metadata.bundle_name
+        : null,
+  };
+
+  const couponNudge: CouponNudgeSummary = {
+    shown: events.some((e) => e.event_type === "coupon_nudge_shown"),
+    converted: events.some((e) => e.event_type === "coupon_nudge_converted"),
+  };
+
+  const lowStockFlagCount = events.filter(
+    (e) => e.event_type === "low_stock_flagged"
+  ).length;
+
   const stopped = events.some((e) => e.event_type === "stopped");
   const negotiationFailed = events.some(
     (e) =>
@@ -211,5 +288,10 @@ export function summarizeSession(events: AuditEvent[]): SessionSummary {
     isComplete,
     negotiationRounds,
     recoveries,
+    loyalty,
+    upsell,
+    bundle,
+    couponNudge,
+    lowStockFlagCount,
   };
 }

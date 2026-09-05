@@ -8,7 +8,15 @@ export type AuditEventType =
   | "payment_call"
   | "failure"
   | "recovery"
-  | "stopped";
+  | "stopped"
+  | "loyalty_discount_applied"
+  | "upsell_offered"
+  | "upsell_accepted"
+  | "upsell_declined"
+  | "bundle_discount_applied"
+  | "coupon_nudge_shown"
+  | "coupon_nudge_converted"
+  | "low_stock_flagged";
 
 export interface AuditEvent {
   timestamp: string;
@@ -31,6 +39,7 @@ export interface SessionStartRequest {
   goal: string;
   budget_inr: number;
   catalog_file?: string;
+  customer_id?: string;
 }
 
 export interface SessionResult {

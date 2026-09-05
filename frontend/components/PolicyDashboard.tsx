@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import { fetchPolicy } from "@/lib/api";
 import type { PolicyConfig } from "@/lib/types";
 
-export default function PolicyDashboard() {
+interface PolicyDashboardProps {
+  /** "full" (default) shows every rule — used in Merchant View. "buyer"
+   * drops the internal system limits (spend cap, order-count cap) and the
+   * static category lists, which aren't tied to anything the buyer sees
+   * happen, keeping just a plain-language approval-threshold note. */
+  variant?: "full" | "buyer";
+}
+
+export default function PolicyDashboard({
+  variant = "full",
+}: PolicyDashboardProps) {
   const [policy, setPolicy] = useState<PolicyConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +39,14 @@ export default function PolicyDashboard() {
         <p className="text-sm text-zinc-400">Loading policy…</p>
       )}
 
-      {policy && (
+      {policy && variant === "buyer" && (
+        <p className="text-sm text-zinc-700 dark:text-zinc-300">
+          Orders above ₹{policy.requires_human_approval_above.toFixed(2)} may
+          need manual approval.
+        </p>
+      )}
+
+      {policy && variant === "full" && (
         <dl className="space-y-3 text-sm">
           <div className="flex items-center justify-between">
             <dt className="text-zinc-500 dark:text-zinc-400">

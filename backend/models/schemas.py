@@ -46,6 +46,14 @@ AuditEventType = Literal[
     "failure",
     "recovery",
     "stopped",
+    "loyalty_discount_applied",
+    "upsell_offered",
+    "upsell_accepted",
+    "upsell_declined",
+    "bundle_discount_applied",
+    "coupon_nudge_shown",
+    "coupon_nudge_converted",
+    "low_stock_flagged",
 ]
 
 
@@ -102,6 +110,47 @@ class MerchantPolicyConfig(BaseModel):
     bulk_discount_min_qty: int
     cost_floor_pct: float
     active_promotion: ActivePromotion | None = None
+    # Below this many units left, get_product_details/negotiate surface a
+    # "low stock" signal — purely informational, changes no pricing/policy.
+    low_stock_threshold: int = 5
+
+
+class BundleRule(BaseModel):
+    """One bundle definition: buying `min_items`+ units of a product that
+    matches `product_ids` or `category` unlocks `discount_pct`."""
+
+    name: str
+    product_ids: list[str] = Field(default_factory=list)
+    category: str | None = None
+    min_items: int
+    discount_pct: float
+
+
+class BundlePolicyConfig(BaseModel):
+    """Bundle discount rules loaded from config/bundle_policy.yaml."""
+
+    bundles: list[BundleRule] = Field(default_factory=list)
+
+
+class UpsellPolicyConfig(BaseModel):
+    """Add-on/upsell rules loaded from config/upsell_policy.yaml."""
+
+    enabled: bool = True
+    # Explicit product_id -> add-on product_id overrides.
+    pairs_with: dict[str, str] = Field(default_factory=dict)
+    # If no explicit pair is configured, offer the cheapest other in-stock
+    # item from the same category.
+    category_fallback: bool = True
+
+
+class UpsellOutcome(BaseModel):
+    """What was offered as an add-on during checkout, and what happened."""
+
+    product_id: str
+    name: str
+    price_inr: float
+    accepted: bool
+    reason: str
 
 
 class PaymentResult(BaseModel):
@@ -134,6 +183,7 @@ class CheckoutStartResult(BaseModel):
     checkout_url: str | None = None
     status_url: str | None = None
     reason: str | None = None
+    upsell: UpsellOutcome | None = None
 
 
 class PaymentCallbackRequest(BaseModel):
@@ -160,12 +210,28 @@ class FailureInjectorStatus(BaseModel):
     armed: dict[str, FailureMode]
 
 
+class LoyaltyPolicyConfig(BaseModel):
+    """Automatic order-value discount rule loaded from config/loyalty_policy.yaml."""
+
+    min_purchase_for_discount_inr: float
+    discount_inr: float
+    # How close (in INR, under the threshold) counts as "almost there" for
+    # the negotiation nudge — see core.negotiation.
+    nudge_margin_inr: float = 100.0
+
+
 class SessionStartRequest(BaseModel):
     """Body for POST /api/session/start."""
 
     goal: str
     budget_inr: float
     catalog_file: str = "catalog_demo_1.csv"
+    # Client-generated (see frontend/lib/customerId.ts) and stored in
+    # localStorage, so returning visits are recognized as the same
+    # customer — there's no account system to key off of instead. Optional
+    # for backward compatibility with older clients/tests; a session
+    # without one simply gets no loyalty tracking.
+    customer_id: str | None = Field(default=None, max_length=100)
 
 
 class OrderCheckRequest(BaseModel):

@@ -24,6 +24,10 @@ export interface SessionSummary {
 
 interface AuditTrailContextValue {
   events: AuditEvent[];
+  /** Every event across every session seen this connection, unfiltered —
+   * for cross-session views (e.g. MerchantRevenuePanel) that need to
+   * aggregate over history rather than follow one session. */
+  allEvents: AuditEvent[];
   connectionState: ConnectionState;
   sessions: SessionSummary[];
   activeSessionId: string | null;
@@ -118,6 +122,7 @@ export function AuditTrailProvider({ children }: { children: ReactNode }) {
     <AuditTrailContext.Provider
       value={{
         events: filteredEvents,
+        allEvents: events,
         connectionState,
         sessions,
         activeSessionId,

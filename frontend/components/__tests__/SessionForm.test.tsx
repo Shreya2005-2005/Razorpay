@@ -208,4 +208,129 @@ describe("SessionForm", () => {
       expect(screen.getByText(/completed in 14 seconds/i)).toBeInTheDocument()
     );
   });
+
+  it("includes a customer_id in the session start request", async () => {
+    setAuditTrail();
+    const user = userEvent.setup();
+    const startSpy = vi
+      .spyOn(api, "startSession")
+      .mockResolvedValue({ final_message: "Done." });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    await waitFor(() => expect(startSpy).toHaveBeenCalled());
+    const requestBody = startSpy.mock.calls[0][0];
+    expect(typeof requestBody.customer_id).toBe("string");
+    expect(requestBody.customer_id).not.toBe("");
+  });
+
+  it("shows a friendly unlocked message once the loyalty discount has applied", async () => {
+    setAuditTrail({
+      events: [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          actor: "system",
+          event_type: "loyalty_discount_applied",
+          message:
+            "🎁 ₹150.00 loyalty discount applied automatically — orders over ₹800 qualify!",
+          metadata: {
+            customer_id: "cust-a",
+            discount_inr: 150,
+          },
+          session_id: "session-1",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    vi.spyOn(api, "startSession").mockResolvedValue({
+      final_message: "Bought it.",
+    });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("You've unlocked ₹150 off!")).toBeInTheDocument()
+    );
+  });
+
+  it("shows a friendly nudge message when the buyer is close to the loyalty threshold", async () => {
+    setAuditTrail({
+      events: [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          actor: "merchant_agent",
+          event_type: "coupon_nudge_shown",
+          message: "Add ₹50.00 more to unlock ₹150 off!",
+          metadata: {
+            product_id: "GS-108",
+            total_inr: 750,
+            shortfall_inr: 50,
+            threshold_inr: 800,
+            discount_inr: 150,
+          },
+          session_id: "session-1",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    vi.spyOn(api, "startSession").mockResolvedValue({
+      final_message: "Bought it.",
+    });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Add ₹50 more to get ₹150 off!")
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("does not show the ⚡ emoji in the completed-in duration badge", async () => {
+    setAuditTrail({
+      events: [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          actor: "buyer_agent",
+          event_type: "decision",
+          message: "Starting session with goal: Buy anything",
+          metadata: {},
+          session_id: "session-1",
+        },
+        {
+          timestamp: "2026-01-01T00:00:14.000Z",
+          actor: "buyer_agent",
+          event_type: "decision",
+          message: "Bought it.",
+          metadata: { final: true },
+          session_id: "session-1",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    vi.spyOn(api, "startSession").mockResolvedValue({
+      final_message: "Bought it.",
+    });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    const badge = await screen.findByText(/completed in 14 seconds/i);
+    expect(badge.textContent).not.toContain("⚡");
+  });
 });

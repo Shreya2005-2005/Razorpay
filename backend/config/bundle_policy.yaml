@@ -1,0 +1,18 @@
+# Bundle discount rules — same pattern as merchant_policy.yaml's bulk
+# discount, just scoped to a specific product list or category instead of
+# applying globally. Buying `min_items`+ units of a product that matches
+# `product_ids` or `category` unlocks `discount_pct` (combined with any
+# other active discount, capped at merchant_policy.yaml's max_discount_pct).
+
+bundles:
+  - name: "Electronics Bundle"
+    product_ids: [GS-109, GS-112, GS-115]
+    category: null
+    min_items: 2
+    discount_pct: 0.08
+
+  - name: "Home Bundle"
+    product_ids: []
+    category: home
+    min_items: 2
+    discount_pct: 0.06
