@@ -65,8 +65,8 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
   const armedEntries = Object.entries(armed);
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+      <h2 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
         Failure Injector
       </h2>
 
@@ -75,7 +75,7 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
           value={productId}
           onChange={(e) => setProductId(e.target.value)}
           disabled={products.length === 0}
-          className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--border-strong)] focus:ring-1 focus:ring-[var(--border-strong)] focus:outline-none disabled:opacity-60"
         >
           {products.length === 0 && (
             <option value="">No products loaded</option>
@@ -89,7 +89,7 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as FailureMode)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--border-strong)] focus:ring-1 focus:ring-[var(--border-strong)] focus:outline-none"
         >
           {MODES.map((m) => (
             <option key={m.value} value={m.value}>
@@ -101,28 +101,30 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
           type="button"
           onClick={handleArm}
           disabled={busy || !productId}
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--surface-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Arm
         </button>
       </div>
 
       {error && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
+          {error}
+        </p>
       )}
 
       <div className="mt-3">
-        <p className="mb-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="mb-1.5 text-xs text-[var(--text-secondary)]">
           Armed for next checkout attempt:
         </p>
         {armedEntries.length === 0 ? (
-          <p className="text-sm text-zinc-400">None armed.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">None armed.</p>
         ) : (
           <ul className="space-y-1.5">
             {armedEntries.map(([id, m]) => (
               <li
                 key={id}
-                className="flex items-center justify-between rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300"
+                className="flex items-center justify-between rounded-lg bg-[var(--surface-2)] px-2.5 py-1.5 text-sm text-[var(--text-warning)]"
               >
                 <span>
                   <span className="font-mono">{id}</span> —{" "}
@@ -132,7 +134,7 @@ export default function FailureTrigger({ products }: FailureTriggerProps) {
                   type="button"
                   onClick={() => handleDisarm(id)}
                   disabled={busy}
-                  className="text-xs font-medium text-amber-700 underline hover:text-amber-900 disabled:opacity-60 dark:text-amber-300 dark:hover:text-amber-100"
+                  className="text-xs font-medium text-[var(--text-warning)] underline hover:opacity-80 disabled:opacity-60"
                 >
                   Disarm
                 </button>

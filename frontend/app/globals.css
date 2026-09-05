@@ -1,8 +1,30 @@
 @import "tailwindcss";
 
+/* Monochrome-first design system: almost everything below is neutral gray.
+ * Color is reserved for exactly one meaning — money-positive (green) and
+ * money-negative/blocked (red) outcomes — plus amber strictly for a
+ * genuine pending/in-progress state. Components should reference these
+ * tokens (e.g. bg-[var(--surface-1)]) rather than hardcoded Tailwind
+ * color utilities, so light/dark mode and any future palette tweak stay
+ * centralized here instead of scattered across every component. */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --surface-0: #ffffff; /* page background */
+  --surface-1: #ffffff; /* card / panel background */
+  --surface-2: #f4f4f5; /* recessed background — table headers, hover rows */
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
+  --border: #e4e4e7;
+  --border-strong: #a1a1aa;
+
+  /* The one reserved meaning: money in (green) / money out or blocked (red).
+   * Amber is allowed only for a genuine pending/in-progress state. */
+  --text-success: #3b6d11;
+  --text-danger: #b91c1c;
+  --text-warning: #b45309;
 }
 
 @theme inline {
@@ -16,11 +38,24 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --surface-0: #09090b;
+    --surface-1: #18181b;
+    --surface-2: #27272a;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+    --border: #3f3f46;
+    --border-strong: #52525b;
+
+    --text-success: #4ade80;
+    --text-danger: #f87171;
+    --text-warning: #fbbf24;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }

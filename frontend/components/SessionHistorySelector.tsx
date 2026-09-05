@@ -19,12 +19,12 @@ export default function SessionHistorySelector() {
   if (sessions.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <span className="text-zinc-500 dark:text-zinc-400">Session:</span>
+    <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm">
+      <span className="text-[var(--text-secondary)]">Session:</span>
       <select
         value={activeSessionId ?? ""}
         onChange={(e) => selectSession(e.target.value || null)}
-        className="flex-1 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2 py-1.5 text-sm text-[var(--text-primary)] focus:border-[var(--border-strong)] focus:ring-1 focus:ring-[var(--border-strong)] focus:outline-none"
       >
         {sessions.map((session) => (
           <option key={session.id} value={session.id}>
@@ -33,15 +33,15 @@ export default function SessionHistorySelector() {
         ))}
       </select>
       {isLive ? (
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--text-tertiary)]" />
           Live
         </span>
       ) : (
         <button
           type="button"
           onClick={() => selectSession(null)}
-          className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          className="shrink-0 rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--text-secondary)] hover:opacity-80"
         >
           Back to live
         </button>
