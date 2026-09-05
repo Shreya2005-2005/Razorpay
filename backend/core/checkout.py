@@ -5,7 +5,7 @@ off to a real payment."""
 import os
 import time
 
-from core import failure_injector, loyalty, upsell
+from core import failure_injector, first_purchase, loyalty, upsell
 from core.audit_trail import audit_trail, current_session_id
 from core.payments import create_order
 from core.policy_guard import check_order, load_policy
@@ -153,11 +153,13 @@ def initiate_checkout(
     and `budget_inr` are optional (skips the upsell step if omitted) for
     backward compatibility with older callers/tests.
 
-    If this order's pre-discount total (including any accepted upsell) meets
-    the loyalty discount's minimum (core.loyalty), the discount is applied
-    here, deterministically — not left to the Buyer Agent to remember to ask
-    for. Applies to any order, known customer_id or not; the rule is a pure
-    function of order value.
+    Exactly one order-level discount applies, deterministically — not left
+    to the Buyer Agent to remember to ask for. If `customer_id` has no
+    prior completed purchase, the first-purchase discount (core.first_purchase)
+    applies and takes priority. Otherwise, if this order's pre-discount total
+    (including any accepted upsell) meets the loyalty discount's minimum
+    (core.loyalty), that discount applies instead. The two never stack, to
+    keep pricing simple and explainable.
     """
     policy_result = check_order(
         product=product,
@@ -188,24 +190,45 @@ def initiate_checkout(
 
     amount_inr, upsell_outcome = _offer_upsell(product, amount_inr, catalog, budget_inr)
 
-    loyalty_policy = loyalty.load_loyalty_policy()
-    discount_inr = loyalty.compute_discount_inr(amount_inr, policy=loyalty_policy)
-    if discount_inr > 0:
-        amount_inr = round(amount_inr - discount_inr, 2)
+    first_purchase_policy = first_purchase.load_first_purchase_policy()
+    first_purchase_discount_inr = first_purchase.compute_discount_inr(
+        amount_inr, customer_id, policy=first_purchase_policy
+    )
+    if first_purchase_discount_inr > 0:
+        amount_inr = round(amount_inr - first_purchase_discount_inr, 2)
         audit_trail.emit(
             actor="system",
-            event_type="loyalty_discount_applied",
+            event_type="first_purchase_discount_applied",
             message=(
-                f"🎁 ₹{discount_inr:.2f} loyalty discount applied automatically — "
-                f"orders over ₹{loyalty_policy.min_purchase_for_discount_inr:.0f} qualify!"
+                f"🎉 ₹{first_purchase_discount_inr:.2f} first-purchase discount applied — "
+                f"welcome! {first_purchase_policy.discount_pct * 100:.0f}% off your first order."
             ),
             metadata={
                 "customer_id": customer_id,
-                "discount_inr": discount_inr,
+                "discount_inr": first_purchase_discount_inr,
+                "discount_pct": first_purchase_policy.discount_pct,
                 "product_id": product.product_id,
             },
         )
-        _emit_coupon_nudge_converted_if_applicable(product)
+    else:
+        loyalty_policy = loyalty.load_loyalty_policy()
+        discount_inr = loyalty.compute_discount_inr(amount_inr, policy=loyalty_policy)
+        if discount_inr > 0:
+            amount_inr = round(amount_inr - discount_inr, 2)
+            audit_trail.emit(
+                actor="system",
+                event_type="loyalty_discount_applied",
+                message=(
+                    f"🎁 ₹{discount_inr:.2f} loyalty discount applied automatically — "
+                    f"orders over ₹{loyalty_policy.min_purchase_for_discount_inr:.0f} qualify!"
+                ),
+                metadata={
+                    "customer_id": customer_id,
+                    "discount_inr": discount_inr,
+                    "product_id": product.product_id,
+                },
+            )
+            _emit_coupon_nudge_converted_if_applicable(product)
 
     receipt = f"receipt_{product.product_id}_{int(time.time())}"
     order = create_order(

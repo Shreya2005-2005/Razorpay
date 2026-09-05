@@ -28,6 +28,10 @@ const BASE: SessionSummary = {
     discountApplied: false,
     discountAppliedInr: 0,
   },
+  firstPurchase: {
+    discountApplied: false,
+    discountAppliedInr: 0,
+  },
   upsell: {
     offered: false,
     accepted: false,

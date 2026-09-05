@@ -1,0 +1,9 @@
+# First-purchase discount — a separate, one-time rule from the loyalty
+# discount (config/loyalty_policy.yaml). Applies only to a customer_id's
+# very first completed purchase and does not stack with the loyalty
+# discount: see core/checkout.py for the priority between the two.
+
+enabled: true
+
+# Fraction off a customer's first order.
+discount_pct: 0.5

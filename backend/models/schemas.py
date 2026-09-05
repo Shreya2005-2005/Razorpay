@@ -54,6 +54,7 @@ AuditEventType = Literal[
     "coupon_nudge_shown",
     "coupon_nudge_converted",
     "low_stock_flagged",
+    "first_purchase_discount_applied",
 ]
 
 
@@ -218,6 +219,14 @@ class LoyaltyPolicyConfig(BaseModel):
     # How close (in INR, under the threshold) counts as "almost there" for
     # the negotiation nudge — see core.negotiation.
     nudge_margin_inr: float = 100.0
+
+
+class FirstPurchasePolicyConfig(BaseModel):
+    """First-purchase discount rule loaded from config/first_purchase_policy.yaml.
+    A separate, one-time rule from LoyaltyPolicyConfig — see core.first_purchase."""
+
+    enabled: bool = True
+    discount_pct: float
 
 
 class SessionStartRequest(BaseModel):
