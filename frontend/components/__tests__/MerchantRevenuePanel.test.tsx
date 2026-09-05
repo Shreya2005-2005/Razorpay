@@ -149,6 +149,48 @@ describe("MerchantRevenuePanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not show the first-purchase banner when no such discount has been applied", () => {
+    mockUseAuditTrail.mockReturnValue({
+      allEvents: completedSession("s1", 1500, 1000, 950),
+    });
+    render(<MerchantRevenuePanel />);
+
+    // The stat card label ("First-purchase discounts applied") always
+    // renders — only the banner sentence is conditional.
+    expect(
+      screen.queryByText(/received the first-purchase discount/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the first-purchase summary line once a discount has been applied", () => {
+    mockUseAuditTrail.mockReturnValue({
+      allEvents: [
+        ...completedSession("s1", 1500, 1000, 1000),
+        ...completedSession("s2", 1500, 1000, 500),
+        ev("s2", {
+          actor: "system",
+          event_type: "first_purchase_discount_applied",
+          message: "🎉 applied",
+          metadata: {
+            customer_id: "cust-new",
+            discount_inr: 500,
+            discount_pct: 0.5,
+          },
+        }),
+      ],
+    });
+    render(<MerchantRevenuePanel />);
+
+    expect(
+      screen.getByText(
+        /🎉 1 new customer received the first-purchase discount — ₹500\.00 given in discounts, contributing ₹500\.00 in revenue\./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("First-purchase discounts applied")
+    ).toBeInTheDocument();
+  });
+
   it("does not show the upsell banner when no upsell has been offered", () => {
     mockUseAuditTrail.mockReturnValue({
       allEvents: completedSession("s1", 1500, 1000, 950),

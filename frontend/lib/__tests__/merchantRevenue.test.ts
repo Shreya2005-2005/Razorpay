@@ -237,6 +237,51 @@ describe("summarizeMerchantRevenue", () => {
     expect(summary.loyalty.discountedRevenueInr).toBe(1099);
   });
 
+  it("defaults first-purchase stats to zero with no discount activity", () => {
+    const events = completedSession("s1", {
+      budgetInr: 1500,
+      listPriceInr: 1000,
+      settledPriceInr: 950,
+    });
+    const summary = summarizeMerchantRevenue(events);
+    expect(summary.firstPurchase).toEqual({
+      discountsAppliedCount: 0,
+      totalDiscountGivenInr: 0,
+      discountedRevenueInr: 0,
+    });
+  });
+
+  it("counts a first-purchase discount applied in one session but not another", () => {
+    const events: AuditEvent[] = [
+      ...completedSession("s1", {
+        budgetInr: 1500,
+        listPriceInr: 1000,
+        settledPriceInr: 1000,
+      }),
+      ...completedSession("s2", {
+        budgetInr: 1500,
+        listPriceInr: 1000,
+        settledPriceInr: 500,
+      }),
+      ev("s2", {
+        actor: "system",
+        event_type: "first_purchase_discount_applied",
+        message: "🎉 applied",
+        metadata: {
+          customer_id: "cust-new",
+          discount_inr: 500,
+          discount_pct: 0.5,
+        },
+      }),
+    ];
+
+    const summary = summarizeMerchantRevenue(events);
+
+    expect(summary.firstPurchase.discountsAppliedCount).toBe(1);
+    expect(summary.firstPurchase.totalDiscountGivenInr).toBe(500);
+    expect(summary.firstPurchase.discountedRevenueInr).toBe(500);
+  });
+
   it("defaults upsell/bundle/coupon-nudge/low-stock stats to zero", () => {
     const events = completedSession("s1", {
       budgetInr: 1500,
