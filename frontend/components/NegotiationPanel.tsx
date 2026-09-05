@@ -73,7 +73,7 @@ function SavingsLine({ settlement }: { settlement: Settlement }) {
       <span className="font-mono font-semibold">
         ₹{settlement.settledPriceInr.toFixed(2)}
       </span>{" "}
-      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+      <span className="font-medium text-[var(--text-success)]">
         — {settlement.savedPct.toFixed(0)}% saved
       </span>
     </p>
@@ -89,18 +89,16 @@ function Bubble({ event }: { event: AuditEvent }) {
   return (
     <div className={`flex ${isBuyer ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm text-[var(--text-primary)] ${
           isBuyer
-            ? "rounded-bl-sm bg-blue-50 text-blue-900 dark:bg-blue-500/10 dark:text-blue-100"
-            : "rounded-br-sm bg-purple-50 text-purple-900 dark:bg-purple-500/10 dark:text-purple-100"
-        } ${settled ? "ring-2 ring-emerald-400/60" : ""}`}
+            ? "rounded-bl-sm bg-[var(--surface-2)]"
+            : "rounded-br-sm border border-[var(--border)] bg-[var(--surface-1)]"
+        } ${settled ? "ring-2 ring-[var(--text-success)]/50" : ""}`}
       >
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase opacity-70">
           {isBuyer ? "Buyer Agent" : "Merchant Agent"}
           {settled && (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              ✓ Settled
-            </span>
+            <span className="text-[var(--text-success)]">✓ Settled</span>
           )}
         </div>
         <p>{event.message}</p>
@@ -140,20 +138,20 @@ export default function NegotiationPanel() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-1)]">
+      <div className="border-b border-[var(--border)] px-4 py-3">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">
           Negotiation
         </h2>
         {lastSettlement && (
-          <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+          <p className="mt-0.5 text-xs text-[var(--text-success)]">
             Settled at ₹{lastSettlement.settledPriceInr.toFixed(2)} vs list
             price ₹{lastSettlement.listPriceInr.toFixed(2)} —{" "}
             {lastSettlement.savedPct.toFixed(0)}% saved
           </p>
         )}
         {totalSavedInr > 0 && (
-          <p className="mt-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <p className="mt-0.5 text-xs font-medium text-[var(--text-success)]">
             ₹{totalSavedInr.toFixed(2)} saved across {settlements.length}{" "}
             negotiation{settlements.length === 1 ? "" : "s"} so far
           </p>
@@ -161,7 +159,7 @@ export default function NegotiationPanel() {
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {negotiationEvents.length === 0 ? (
-          <p className="p-4 text-center text-sm text-zinc-400">
+          <p className="p-4 text-center text-sm text-[var(--text-tertiary)]">
             No negotiation activity yet.
           </p>
         ) : (

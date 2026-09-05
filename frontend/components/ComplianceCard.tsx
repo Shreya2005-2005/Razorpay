@@ -4,7 +4,10 @@ import { useMemo } from "react";
 import { useAuditTrail } from "@/hooks/useAuditTrail";
 import { summarizeSession } from "@/lib/sessionSummary";
 
-type CheckState = "pass" | "fail" | "neutral";
+// "pending" is reserved for a genuine in-progress state (e.g. "Confirming
+// payment…") — the one place amber/warning is allowed outside the
+// money-positive (green) / money-negative-or-blocked (red) reservation.
+type CheckState = "pass" | "fail" | "pending" | "neutral";
 
 function CheckRow({
   state,
@@ -15,23 +18,32 @@ function CheckRow({
   label: string;
   detail?: string;
 }) {
-  const icon = state === "pass" ? "✓" : state === "fail" ? "✗" : "–";
+  const icon =
+    state === "pass"
+      ? "✓"
+      : state === "fail"
+        ? "✗"
+        : state === "pending"
+          ? "…"
+          : "–";
   const iconClass =
     state === "pass"
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-[var(--text-success)]"
       : state === "fail"
-        ? "text-red-600 dark:text-red-400"
-        : "text-zinc-400 dark:text-zinc-500";
+        ? "text-[var(--text-danger)]"
+        : state === "pending"
+          ? "text-[var(--text-warning)]"
+          : "text-[var(--text-tertiary)]";
 
   return (
     <li className="flex items-start gap-2">
       <span className={`mt-0.5 font-bold ${iconClass}`} aria-hidden>
         {icon}
       </span>
-      <span className="text-sm text-zinc-700 dark:text-zinc-300">
+      <span className="text-sm text-[var(--text-primary)]">
         {label}
         {detail && (
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="block text-xs text-[var(--text-secondary)]">
             {detail}
           </span>
         )}
@@ -83,10 +95,11 @@ export default function ComplianceCard({
 
   // Buyer View: an unverified-but-captured payment is a deliberate,
   // in-progress safety check, not a failure — an ✗ there reads as an error.
-  // Keep a real ✗ only for an actual decline.
+  // Keep a real ✗ only for an actual decline; show it as genuinely pending
+  // otherwise (the one legitimate use of the amber/warning color here).
   const buyerPaymentState: CheckState =
     paymentState === "fail" && !summary.payment.declined
-      ? "neutral"
+      ? "pending"
       : paymentState;
   const buyerPaymentLabel =
     buyerPaymentState === "pass"
@@ -101,8 +114,8 @@ export default function ComplianceCard({
       : paymentDetail;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 shadow-sm dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900">
-      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
         <span aria-hidden>📋</span> Compliance Summary
       </h2>
       <ul className="space-y-2.5">

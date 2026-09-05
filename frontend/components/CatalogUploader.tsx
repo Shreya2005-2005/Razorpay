@@ -87,21 +87,17 @@ export default function CatalogUploader({
 
   return (
     <div
-      className={`rounded-xl border bg-white p-4 shadow-sm transition-all duration-700 dark:bg-zinc-950 ${
-        justSwapped
-          ? "border-emerald-400 ring-2 ring-emerald-300/60 dark:border-emerald-500 dark:ring-emerald-500/40"
-          : "border-zinc-200 ring-2 ring-transparent dark:border-zinc-800"
+      className={`rounded-xl border bg-[var(--surface-1)] p-4 transition-colors duration-700 ${
+        justSwapped ? "border-[var(--border-strong)]" : "border-[var(--border)]"
       }`}
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">
           Merchant Catalog
         </h2>
         <span
-          className={`text-xs font-medium transition-opacity duration-700 ${
-            justSwapped
-              ? "text-emerald-600 opacity-100 dark:text-emerald-400"
-              : "opacity-0"
+          className={`text-xs font-medium text-[var(--text-secondary)] transition-opacity duration-700 ${
+            justSwapped ? "opacity-100" : "opacity-0"
           }`}
           aria-hidden={!justSwapped}
         >
@@ -112,7 +108,7 @@ export default function CatalogUploader({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mb-3 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--border-strong)] focus:ring-1 focus:ring-[var(--border-strong)] focus:outline-none"
       >
         {CATALOG_FILES.map(({ file, label }) => (
           <option key={file} value={file}>
@@ -122,43 +118,47 @@ export default function CatalogUploader({
       </select>
 
       {status === "loading" && (
-        <p className="text-sm text-zinc-400">Translating catalog…</p>
+        <p className="text-sm text-[var(--text-tertiary)]">
+          Translating catalog…
+        </p>
       )}
       {status === "error" && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm font-medium text-[var(--text-primary)]">
+          {error}
+        </p>
       )}
 
       {status === "done" && (
         <>
           <div className="mb-3 flex items-center gap-2">
             {variant === "full" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">
                 <span aria-hidden>✓</span> parsed from .{extension}
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">
               {products.length} product{products.length === 1 ? "" : "s"}{" "}
               normalized
             </span>
           </div>
-          <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mb-2 text-xs text-[var(--text-secondary)]">
             Same standard schema regardless of the source file&apos;s column
             names — proof this works with any merchant&apos;s catalog format.
           </p>
-          <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="max-h-48 overflow-y-auto rounded-lg border border-[var(--border)]">
             <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900">
+              <thead className="sticky top-0 bg-[var(--surface-2)]">
                 <tr>
-                  <th className="px-2 py-1.5 font-semibold text-zinc-600 dark:text-zinc-300">
+                  <th className="px-2 py-1.5 font-semibold text-[var(--text-secondary)]">
                     ID
                   </th>
-                  <th className="px-2 py-1.5 font-semibold text-zinc-600 dark:text-zinc-300">
+                  <th className="px-2 py-1.5 font-semibold text-[var(--text-secondary)]">
                     Name
                   </th>
-                  <th className="px-2 py-1.5 font-semibold text-zinc-600 dark:text-zinc-300">
+                  <th className="px-2 py-1.5 font-semibold text-[var(--text-secondary)]">
                     ₹
                   </th>
-                  <th className="px-2 py-1.5 font-semibold text-zinc-600 dark:text-zinc-300">
+                  <th className="px-2 py-1.5 font-semibold text-[var(--text-secondary)]">
                     Stock
                   </th>
                 </tr>
@@ -167,18 +167,18 @@ export default function CatalogUploader({
                 {products.map((p) => (
                   <tr
                     key={p.product_id}
-                    className="border-t border-zinc-100 dark:border-zinc-800"
+                    className="border-t border-[var(--border)]"
                   >
-                    <td className="px-2 py-1 font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="px-2 py-1 font-mono text-[var(--text-secondary)]">
                       {p.product_id}
                     </td>
-                    <td className="px-2 py-1 text-zinc-800 dark:text-zinc-200">
+                    <td className="px-2 py-1 text-[var(--text-primary)]">
                       {p.name}
                     </td>
-                    <td className="px-2 py-1 font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="px-2 py-1 font-mono text-[var(--text-secondary)]">
                       {p.price_inr.toFixed(2)}
                     </td>
-                    <td className="px-2 py-1 font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="px-2 py-1 font-mono text-[var(--text-secondary)]">
                       {p.stock}
                     </td>
                   </tr>

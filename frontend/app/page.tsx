@@ -28,10 +28,10 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 sm:p-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">
               Agent Commerce Adapter
             </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-[var(--text-secondary)]">
               Live view of the buyer agent, merchant negotiation, policy guard,
               and payments.
             </p>
@@ -39,7 +39,7 @@ export default function Home() {
           <div
             role="tablist"
             aria-label="Perspective"
-            className="inline-flex shrink-0 rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-950"
+            className="inline-flex shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-0.5"
           >
             <button
               type="button"
@@ -48,8 +48,8 @@ export default function Home() {
               onClick={() => setView("buyer")}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                 view === "buyer"
-                  ? "bg-blue-600 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                  ? "bg-[var(--text-primary)] text-[var(--surface-0)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
               }`}
             >
               Buyer View
@@ -61,8 +61,8 @@ export default function Home() {
               onClick={() => setView("merchant")}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                 view === "merchant"
-                  ? "bg-blue-600 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                  ? "bg-[var(--text-primary)] text-[var(--surface-0)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
               }`}
             >
               Merchant View
@@ -115,7 +115,7 @@ export default function Home() {
             <div
               role="tablist"
               aria-label="Merchant View detail level"
-              className="inline-flex w-fit shrink-0 rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-950"
+              className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-0.5"
             >
               <button
                 type="button"
@@ -124,8 +124,8 @@ export default function Home() {
                 onClick={() => setMerchantSubView("summary")}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   merchantSubView === "summary"
-                    ? "bg-blue-600 text-white"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                    ? "bg-[var(--text-primary)] text-[var(--surface-0)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
                 }`}
               >
                 Summary
@@ -137,8 +137,8 @@ export default function Home() {
                 onClick={() => setMerchantSubView("advanced")}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   merchantSubView === "advanced"
-                    ? "bg-blue-600 text-white"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                    ? "bg-[var(--text-primary)] text-[var(--surface-0)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
                 }`}
               >
                 Advanced

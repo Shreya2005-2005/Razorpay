@@ -10,6 +10,21 @@ vi.mock("@/hooks/useAuditTrail", () => ({
   SESSION_START_PREFIX: "Starting session with goal: ",
 }));
 
+// Several summary banners now color only the ₹ figure via a nested <span>,
+// splitting the sentence across elements. A plain string/regex matcher only
+// matches a single element's own textContent, so it needs this: match the
+// most specific element whose *aggregated* textContent satisfies the regex
+// (excluding any element that has a child which already does).
+function hasText(pattern: RegExp) {
+  return (_content: string, element: Element | null): boolean => {
+    if (!element) return false;
+    if (!pattern.test(element.textContent ?? "")) return false;
+    return Array.from(element.children).every(
+      (child) => !pattern.test(child.textContent ?? "")
+    );
+  };
+}
+
 function ev(sessionId: string, overrides: Partial<AuditEvent>): AuditEvent {
   return {
     timestamp: "2026-01-01T00:00:00.000Z",
@@ -69,7 +84,7 @@ describe("MerchantRevenuePanel", () => {
     render(<MerchantRevenuePanel />);
 
     expect(
-      screen.getByText(/₹0\.00 in revenue closed across 0 sales/i)
+      screen.getByText(hasText(/₹0\.00 in revenue closed across 0 sales/i))
     ).toBeInTheDocument();
     expect(screen.getByText(/no sales like this yet/i)).toBeInTheDocument();
   });
@@ -82,7 +97,7 @@ describe("MerchantRevenuePanel", () => {
 
     expect(
       screen.getByText(
-        /₹780\.00 in revenue closed across 1 sale — including 1 sale/i
+        hasText(/₹780\.00 in revenue closed across 1 sale — including 1 sale/i)
       )
     ).toBeInTheDocument();
     expect(
@@ -111,7 +126,9 @@ describe("MerchantRevenuePanel", () => {
     });
     render(<MerchantRevenuePanel />);
 
-    expect(screen.getByText("₹2180.00")).toBeInTheDocument();
+    // Total revenue now appears both in the summary banner (its own <span>)
+    // and the stat-card grid, so an exact-match query legitimately finds two.
+    expect(screen.getAllByText("₹2180.00").length).toBeGreaterThan(0);
     expect(screen.getByText("₹1090.00")).toBeInTheDocument();
   });
 
@@ -144,7 +161,9 @@ describe("MerchantRevenuePanel", () => {
 
     expect(
       screen.getByText(
-        /🎁 1 order received the automatic loyalty discount — ₹150\.00 given in discounts, contributing ₹1099\.00 in revenue\./i
+        hasText(
+          /🎁 1 order received the automatic loyalty discount — ₹150\.00 given in discounts, contributing ₹1099\.00 in revenue\./i
+        )
       )
     ).toBeInTheDocument();
   });
@@ -182,7 +201,9 @@ describe("MerchantRevenuePanel", () => {
 
     expect(
       screen.getByText(
-        /🛍️ 1 of 1 offered add-ons accepted, contributing ₹49\.00 in additional revenue\./i
+        hasText(
+          /🛍️ 1 of 1 offered add-ons accepted, contributing ₹49\.00 in additional revenue\./i
+        )
       )
     ).toBeInTheDocument();
   });
