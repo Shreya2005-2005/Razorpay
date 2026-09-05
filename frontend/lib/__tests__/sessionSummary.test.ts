@@ -250,6 +250,34 @@ describe("summarizeSession loyalty facts", () => {
   });
 });
 
+describe("summarizeSession first-purchase facts", () => {
+  it("defaults to no first-purchase activity", () => {
+    const summary = summarizeSession([]);
+    expect(summary.firstPurchase).toEqual({
+      discountApplied: false,
+      discountAppliedInr: 0,
+    });
+  });
+
+  it("detects a first-purchase discount applied this session and its amount", () => {
+    const summary = summarizeSession([
+      event({
+        actor: "system",
+        event_type: "first_purchase_discount_applied",
+        message:
+          "🎉 ₹500.00 first-purchase discount applied — welcome! 50% off your first order.",
+        metadata: {
+          customer_id: "cust-new",
+          discount_inr: 500,
+          discount_pct: 0.5,
+        },
+      }),
+    ]);
+    expect(summary.firstPurchase.discountApplied).toBe(true);
+    expect(summary.firstPurchase.discountAppliedInr).toBe(500);
+  });
+});
+
 describe("summarizeSession upsell facts", () => {
   it("defaults to no upsell activity", () => {
     const summary = summarizeSession([]);

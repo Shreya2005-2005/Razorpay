@@ -70,6 +70,18 @@ export default function SessionForm({ catalogFile }: SessionFormProps) {
   );
 
   const loyaltyNudge = useMemo(() => {
+    const firstPurchaseEvent = events.find(
+      (e) => e.event_type === "first_purchase_discount_applied"
+    );
+    if (firstPurchaseEvent) {
+      const discountPct = firstPurchaseEvent.metadata?.discount_pct;
+      return typeof discountPct === "number"
+        ? {
+            message: `Welcome! You've got ${(discountPct * 100).toFixed(0)}% off your first order.`,
+            unlocked: true,
+          }
+        : null;
+    }
     const discountAppliedEvent = events.find(
       (e) => e.event_type === "loyalty_discount_applied"
     );

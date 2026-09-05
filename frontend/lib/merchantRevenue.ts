@@ -17,6 +17,12 @@ export interface LoyaltyRevenueSummary {
   discountedRevenueInr: number;
 }
 
+export interface FirstPurchaseRevenueSummary {
+  discountsAppliedCount: number;
+  totalDiscountGivenInr: number;
+  discountedRevenueInr: number;
+}
+
 export interface UpsellRevenueSummary {
   offeredCount: number;
   acceptedCount: number;
@@ -41,6 +47,7 @@ export interface MerchantRevenueSummary {
   policyBlockedCount: number;
   likelyLostSales: SessionAggregate[];
   loyalty: LoyaltyRevenueSummary;
+  firstPurchase: FirstPurchaseRevenueSummary;
   upsell: UpsellRevenueSummary;
   bundle: BundleRevenueSummary;
   couponNudge: CouponNudgeRevenueSummary;
@@ -113,6 +120,21 @@ export function summarizeMerchantRevenue(
     ),
   };
 
+  const firstPurchaseDiscountedSessions = completed.filter(
+    (a) => a.summary.firstPurchase.discountApplied
+  );
+  const firstPurchase: FirstPurchaseRevenueSummary = {
+    discountsAppliedCount: firstPurchaseDiscountedSessions.length,
+    totalDiscountGivenInr: firstPurchaseDiscountedSessions.reduce(
+      (sum, a) => sum + a.summary.firstPurchase.discountAppliedInr,
+      0
+    ),
+    discountedRevenueInr: firstPurchaseDiscountedSessions.reduce(
+      (sum, a) => sum + (a.summary.payment.amountInr ?? 0),
+      0
+    ),
+  };
+
   const upsellAcceptedSessions = completed.filter(
     (a) => a.summary.upsell.accepted
   );
@@ -153,6 +175,7 @@ export function summarizeMerchantRevenue(
     policyBlockedCount,
     likelyLostSales,
     loyalty,
+    firstPurchase,
     upsell,
     bundle,
     couponNudge,

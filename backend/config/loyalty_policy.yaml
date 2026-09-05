@@ -7,7 +7,7 @@
 min_purchase_for_discount_inr: 800
 
 # Flat rupee discount applied to a qualifying order.
-discount_inr: 150
+discount_inr: 50
 
 # During negotiation, if the settling total is under the threshold above by
 # no more than this margin, the Merchant Agent nudges the buyer to add a

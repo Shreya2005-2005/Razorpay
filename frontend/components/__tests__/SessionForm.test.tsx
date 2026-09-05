@@ -261,6 +261,90 @@ describe("SessionForm", () => {
     );
   });
 
+  it("shows a welcome message once the first-purchase discount has applied", async () => {
+    setAuditTrail({
+      events: [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          actor: "system",
+          event_type: "first_purchase_discount_applied",
+          message:
+            "🎉 ₹500.00 first-purchase discount applied — welcome! 50% off your first order.",
+          metadata: {
+            customer_id: "cust-new",
+            discount_inr: 500,
+            discount_pct: 0.5,
+          },
+          session_id: "session-1",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    vi.spyOn(api, "startSession").mockResolvedValue({
+      final_message: "Bought it.",
+    });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Welcome! You've got 50% off your first order.")
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("prefers the welcome message over the loyalty message when both events are present", async () => {
+    setAuditTrail({
+      events: [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          actor: "system",
+          event_type: "loyalty_discount_applied",
+          message:
+            "🎁 ₹50.00 loyalty discount applied automatically — orders over ₹800 qualify!",
+          metadata: { customer_id: "cust-a", discount_inr: 50 },
+          session_id: "session-1",
+        },
+        {
+          timestamp: "2026-01-01T00:00:01.000Z",
+          actor: "system",
+          event_type: "first_purchase_discount_applied",
+          message:
+            "🎉 ₹500.00 first-purchase discount applied — welcome! 50% off your first order.",
+          metadata: {
+            customer_id: "cust-new",
+            discount_inr: 500,
+            discount_pct: 0.5,
+          },
+          session_id: "session-1",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    vi.spyOn(api, "startSession").mockResolvedValue({
+      final_message: "Bought it.",
+    });
+
+    render(<SessionForm catalogFile="catalog_demo_1.csv" />);
+    await user.type(screen.getByLabelText("Goal"), "Buy anything");
+    await user.click(
+      screen.getByRole("button", { name: /start buyer agent/i })
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Welcome! You've got 50% off your first order.")
+      ).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByText("You've unlocked ₹50 off!")
+    ).not.toBeInTheDocument();
+  });
+
   it("shows a friendly nudge message when the buyer is close to the loyalty threshold", async () => {
     setAuditTrail({
       events: [

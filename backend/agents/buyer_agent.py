@@ -8,7 +8,7 @@ import uuid
 
 from groq import Groq
 
-from core import kill_switch, loyalty
+from core import first_purchase, kill_switch, loyalty
 from core.audit_trail import audit_trail, session_scope
 from core.catalog_translator import translate_catalog
 from core.checkout import initiate_checkout
@@ -252,10 +252,20 @@ class BuyerAgent:
             "happens on its own, you don't need to do anything special to trigger it, but "
             "feel free to mention it to the user if it applies.\n"
         )
+        first_purchase_note = ""
+        if first_purchase.is_first_purchase(self.customer_id):
+            first_purchase_policy = first_purchase.load_first_purchase_policy()
+            first_purchase_note = (
+                f"\nThis customer has no prior completed purchase, so their first order "
+                f"automatically gets {first_purchase_policy.discount_pct * 100:.0f}% off at "
+                "checkout instead of the loyalty discount above (the two don't stack) — this "
+                "also happens on its own, but feel free to welcome them and mention it.\n"
+            )
         system_prompt = (
             "You are a buyer agent shopping a merchant catalog on behalf of a user. "
             f"Goal: {self.goal}\nBudget: ₹{self.budget_inr}\n"
             f"{loyalty_note}"
+            f"{first_purchase_note}"
             "Only use information returned by your tools — never invent product ids, "
             "prices, or stock levels. Use search_catalog and get_product_details to find "
             "and verify options before recommending or acting. Stay within budget. "
